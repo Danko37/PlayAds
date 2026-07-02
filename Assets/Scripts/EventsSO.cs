@@ -4,9 +4,8 @@ using UnityEngine;
 
 public struct CollideData
 {
-    public EntityType  entityType;
-    public int heroScore;
-    public int enemyScore;
+    public HeroView hero;
+    public EntityBase target;
 }
 
 [CreateAssetMenu(menuName = "Events/EventsSO")]

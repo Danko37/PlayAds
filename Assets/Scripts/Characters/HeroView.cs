@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -7,7 +6,7 @@ namespace Characters
     public class HeroView : EntityBase
     {
         private static readonly int IsRun = Animator.StringToHash("isRun");
-
+        
         [SerializeField] 
         private EventsSO events;
         [SerializeField]
@@ -23,6 +22,8 @@ namespace Characters
         public NavMeshAgent NavMeshAgent => _navMeshAgent;
         void Start()
         {
+            SetScoreText(Score);
+            
             _navMeshAgent.updateRotation = false;
             _navMeshAgent.autoBraking = false;
             _navMeshAgent.speed = 8f;
@@ -34,7 +35,7 @@ namespace Characters
         
             Debug.Log(_heroVisualTransform.localRotation);
         }
-
+        
         public void SetRun(bool run)
         {
             animator.SetBool(IsRun, run);
@@ -46,13 +47,11 @@ namespace Characters
             if (collideEntity ==  null)  return;
 
             var data = new CollideData
-                { entityType = collideEntity.entityType, heroScore = Score, enemyScore = collideEntity.Score };
+                { hero = this,  target = collideEntity};
             if (collideEntity.entityType == EntityType.Enemy)
             {
                 events.OnCollideEventRaise(data);
             }
-
-            
         }
     }
 }

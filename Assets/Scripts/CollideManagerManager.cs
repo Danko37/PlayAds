@@ -13,10 +13,10 @@ public class CollideManagerManager : MonoBehaviour
 
     private void OnCollideCollideWithEntity(CollideData data)
     {
-        switch (data.entityType)
+        switch (data.target.entityType)
         {
-            case EntityType.Hero:
-                StartBattle(data);
+            case EntityType.Enemy:
+                StartBattle(data.target, data.hero);
                 break;
             case EntityType.Chest:
                 break;
@@ -30,7 +30,7 @@ public class CollideManagerManager : MonoBehaviour
         eventsSo.OnCollideEvent -= OnCollideCollideWithEntity;
     }
 
-    private void StartBattle(CollideData data)
+    private void StartBattle(EntityBase enemy, HeroView  hero)
     {
         
     }

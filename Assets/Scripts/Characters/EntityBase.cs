@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace Characters
@@ -11,9 +12,16 @@ namespace Characters
 
     public class EntityBase : InteractBase
     {
+        [SerializeField] protected TextMeshProUGUI ScoreText;
         [SerializeField]
         protected Animator animator;
         
         public int Score;
+        
+        public void SetScoreText(int score)
+        {
+            if(ScoreText == null) return;
+            ScoreText.text = score.ToString();
+        }
     }
 }
