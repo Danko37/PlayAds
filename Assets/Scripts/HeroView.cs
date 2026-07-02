@@ -3,8 +3,12 @@ using UnityEngine.AI;
 
 public class HeroView : MonoBehaviour
 {
+    private static readonly int IsRun = Animator.StringToHash("isRun");
+
     [SerializeField]
     private Transform _heroVisualTransform;
+    [SerializeField]
+    private Animator _heroAnimator;
     
     public Transform HeroVisualTransform => _heroVisualTransform;
     
@@ -23,8 +27,13 @@ public class HeroView : MonoBehaviour
         _navMeshAgent.angularSpeed = 1000f;
         _navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
         
-        InitialYRotation = _heroVisualTransform.rotation.eulerAngles.y;
+        InitialYRotation = _heroVisualTransform.localRotation.eulerAngles.y;
         
         Debug.Log(_heroVisualTransform.localRotation);
+    }
+
+    public void SetRun(bool run)
+    {
+        _heroAnimator.SetBool(IsRun, run);
     }
 }

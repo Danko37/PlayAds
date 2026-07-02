@@ -1,26 +1,36 @@
-﻿using DG.Tweening;
+﻿using System;
+using DG.Tweening;
+using DG.Tweening.Core;
+using DG.Tweening.Plugins.Options;
 using UnityEngine;
 
 public class PathDot : MonoBehaviour
 {
-    public static Vector3 InitRotation = new(38.4044266f, 3.1675055f, 44.5107918f);
-    
+    [SerializeField] private Vector3 initRotation = new(38.4044266f, 3.1675055f, 44.5107918f);
     [SerializeField] private SpriteRenderer sprite;
-
+    private TweenerCore<Vector3, Vector3, VectorOptions> _tween;
+    public Vector3 InitRotation => initRotation;
+    
     public void Show(float delay)
     {
         transform.localScale = Vector3.zero;
 
-        transform
-            .DOScale(0.3f, 0.25f)
+        _tween = transform
+            .DOScale(0.5f, 0.25f)
             .SetDelay(delay)
             .SetEase(Ease.OutBack);
     }
 
     public void SetAlpha(float alpha)
     {
-        Color c = sprite.color;
+        var c = sprite.color;
         c.a = alpha;
         sprite.color = c;
+    }
+
+    private void OnDestroy()
+    {
+        _tween?.Kill();
+        _tween =  null;
     }
 }

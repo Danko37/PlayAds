@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 
 public enum PlayerState
 {
@@ -15,26 +16,6 @@ public enum PlayerState
 
 public class GameManager : MonoBehaviour
 {
-    private static GameManager _instance;
-
-    public static GameManager Instance
-    {
-        get
-        {
-            if (_instance != null) return _instance;
-            
-            _instance = FindAnyObjectByType<GameManager>();
-
-            if (_instance == null)
-            {
-                Debug.LogError("GameManager instance not found in the scene. Please ensure there is a GameManager in the scene.");
-            }
-
-            return _instance;
-        }
-        set => _instance = value;
-    }
-
     [Header("References")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Transform pathPointsParent;
@@ -44,7 +25,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject pointPrefab;
     
     [SerializeField] private float moveSpeed = 8f;
-    [SerializeField] private float dotSpacing = 5f;
+    [SerializeField] private float dotSpacing = 50f;
     [SerializeField] private float dotFadeDistance = 0.6f;
     [SerializeField] private HeroView heroView;
 
@@ -56,8 +37,13 @@ public class GameManager : MonoBehaviour
     private NavMeshPath navPath;
     
     public PlayerState PlayerState { get; private set; } = PlayerState.Idle;
-    
-    
+
+
+    private void Awake()
+    {
+        DOTween.useSafeMode = false;
+    }
+
     private void MoveToPoint(Vector3 target)
     {
         if (moveCoroutine != null)
@@ -88,6 +74,7 @@ public class GameManager : MonoBehaviour
     private IEnumerator MoveCoroutine()
     {
         PlayerState = PlayerState.Moving;
+        heroView.SetRun(true);
         
         for (int i = 1; i < currentPath.Count; i++)
         {
@@ -117,6 +104,8 @@ public class GameManager : MonoBehaviour
 
         moveCoroutine = null;
         
+        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+        heroView.SetRun(false);
         PlayerState = PlayerState.Idle;
     }
 
@@ -168,7 +157,6 @@ public class GameManager : MonoBehaviour
             for (int j = 0; j <= dotCount; j++)
             {
                 var position = start + direction * (j * dotSpacing);
-                //position.y += pointHeight;
 
                 var obj = Instantiate(
                     pointPrefab,
@@ -176,10 +164,10 @@ public class GameManager : MonoBehaviour
                     Quaternion.identity,
                     pathPointsParent);
                 
-                obj.transform.rotation = Quaternion.Euler(PathDot.InitRotation);
-                
                 var dot = obj.GetComponent<PathDot>();
-
+                
+                dot.transform.rotation = Quaternion.Euler(dot.InitRotation);
+                
                 activeDots.Add(dot);
 
                 dot.Show(0);
