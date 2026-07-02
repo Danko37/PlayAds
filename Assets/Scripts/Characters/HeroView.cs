@@ -22,8 +22,6 @@ namespace Characters
         public NavMeshAgent NavMeshAgent => _navMeshAgent;
         void Start()
         {
-            SetScoreText(Score);
-            
             _navMeshAgent.updateRotation = false;
             _navMeshAgent.autoBraking = false;
             _navMeshAgent.speed = 8f;
@@ -32,8 +30,6 @@ namespace Characters
             _navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
         
             InitialYRotation = _heroVisualTransform.localRotation.eulerAngles.y;
-        
-            Debug.Log(_heroVisualTransform.localRotation);
         }
         
         public void SetRun(bool run)

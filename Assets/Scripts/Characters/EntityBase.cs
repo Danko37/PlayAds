@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -17,7 +18,12 @@ namespace Characters
         protected Animator animator;
         
         public int Score;
-        
+
+        private void Start()
+        {
+            SetScoreText(Score);
+        }
+
         public void SetScoreText(int score)
         {
             if(ScoreText == null) return;
