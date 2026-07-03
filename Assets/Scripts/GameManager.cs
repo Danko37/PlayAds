@@ -89,7 +89,7 @@ public class GameManager : MonoBehaviour
     {
         PlayerState = PlayerState.Dead;
         heroView.SetRun(false);
-        heroView.Die();
+        heroView.SetDie();
 
         if (moveCoroutine != null)
         {

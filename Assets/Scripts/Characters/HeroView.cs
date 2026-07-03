@@ -14,11 +14,16 @@ namespace Characters
         private EventsSO events;
         [SerializeField]
         private Transform _heroVisualTransform;
+        [SerializeField]
+        private Transform _heroVisualTransformWithSword;
 
-        [Header("Model Swap (безоружный -> с мечом)")]
-        [SerializeField] private GameObject swordlessModel;   // DF_Knight_2_idle (активна на старте)
-        [SerializeField] private GameObject swordModel;       // DF_Knight_2_attack_02 (выключена на старте)
-        [SerializeField] private Animator swordAnimator;      // аниматор модели с мечом
+      
+        // DF_Knight_2_idle (активна на старте)
+        [SerializeField] private GameObject heroWithoutSwordModel;   
+        // DF_Knight_2_attack_02 (выключена на старте)
+        [SerializeField] private GameObject heroWithSwordModel;    
+        // аниматор модели с мечом
+        [SerializeField] private Animator swordAnimator;      
         [SerializeField, Range(0.1f, 1f)] private float shrinkFactor = 0.8f;
         [SerializeField] private float shrinkDuration = 0.15f;
         [SerializeField] private float growDuration = 0.25f;
@@ -58,7 +63,7 @@ namespace Characters
             animator.SetBool(IsRun, run);
         }
 
-        public void Die()
+        public void SetDie()
         {
             animator.SetTrigger(Die1);
         }
@@ -71,7 +76,7 @@ namespace Characters
         [ContextMenu("Equip Sword (test)")]
         public void EquipSword()
         {
-            if (_hasSword || swordModel == null || swordlessModel == null || swordAnimator == null)
+            if (_hasSword || heroWithSwordModel == null || heroWithoutSwordModel == null || swordAnimator == null)
                 return;
 
             _hasSword = true;
@@ -79,28 +84,32 @@ namespace Characters
             // Эффект из спрайт-рендерера и прочее — вешается в инспекторе.
             onSwordEquipped?.Invoke();
 
-            var swordlessScale = swordlessModel.transform.localScale;
-            var swordTargetScale = swordModel.transform.localScale;
+            var swordlessScale = heroWithoutSwordModel.transform.localScale;
+            var swordTargetScale = heroWithSwordModel.transform.localScale;
 
             // 1) текущая модель уменьшается, затем скрывается.
-            swordlessModel.transform
+            heroWithoutSwordModel.transform
                 .DOScale(swordlessScale * shrinkFactor, shrinkDuration)
                 .SetEase(Ease.InBack)
                 .OnComplete(() =>
                 {
-                    swordlessModel.SetActive(false);
-                    swordlessModel.transform.localScale = swordlessScale;
+                    heroWithoutSwordModel.SetActive(false);
+                    heroWithoutSwordModel.transform.localScale = swordlessScale;
 
                     // 2) модель с мечом активируется в уменьшённом виде и растёт до нормы.
-                    swordModel.transform.localScale = swordTargetScale * shrinkFactor;
-                    swordModel.SetActive(true);
+                    heroWithSwordModel.transform.localScale = swordTargetScale * shrinkFactor;
+                    heroWithSwordModel.SetActive(true);
 
                     // 3) дальше код управляет новым аниматором.
                     animator = swordAnimator;
+                    
+                    //подменяем ссылки для вращения персонажа
+                    _heroVisualTransform = _heroVisualTransformWithSword;
+                    
                     if (HasParameter(animator, IsRun))
                         animator.SetBool(IsRun, _isRunning);
 
-                    swordModel.transform
+                    heroWithSwordModel.transform
                         .DOScale(swordTargetScale, growDuration)
                         .SetEase(Ease.OutBack);
                 });
