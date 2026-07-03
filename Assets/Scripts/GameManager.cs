@@ -44,6 +44,60 @@ public class GameManager : MonoBehaviour
         DOTween.useSafeMode = false;
     }
 
+    private void OnEnable()
+    {
+        if (heroView == null || heroView.Events == null)
+            return;
+
+        heroView.Events.OnBattleStart += HandleBattleStart;
+        heroView.Events.OnBattleWin += HandleBattleWin;
+        heroView.Events.OnBattleLose += HandleBattleLose;
+    }
+
+    private void OnDisable()
+    {
+        if (heroView == null || heroView.Events == null)
+            return;
+
+        heroView.Events.OnBattleStart -= HandleBattleStart;
+        heroView.Events.OnBattleWin -= HandleBattleWin;
+        heroView.Events.OnBattleLose -= HandleBattleLose;
+    }
+
+    private void HandleBattleStart()
+    {
+        PlayerState = PlayerState.Fighting;
+        heroView.SetRun(false);
+    }
+
+    private void HandleBattleWin()
+    {
+        // После победы герой остаётся стоять на месте боя, маршрут прерывается.
+        PlayerState = PlayerState.Idle;
+        heroView.SetRun(false);
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+
+        ClearDots();
+    }
+
+    private void HandleBattleLose()
+    {
+        PlayerState = PlayerState.Dead;
+        heroView.SetRun(false);
+        heroView.Die();
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+    }
+
     private void MoveToPoint(Vector3 target)
     {
         if (moveCoroutine != null)
@@ -87,6 +141,16 @@ public class GameManager : MonoBehaviour
 
             while (Vector3.Distance(heroView.transform.position, target) > 0.03f)
             {
+                if (PlayerState == PlayerState.Dead)
+                    yield break;
+
+                // Пауза движения на время боя; после победы состояние снова Moving.
+                while (PlayerState == PlayerState.Fighting)
+                    yield return null;
+
+                if (PlayerState == PlayerState.Dead)
+                    yield break;
+
                 heroView.transform.position = Vector3.MoveTowards(
                     heroView.transform.position,
                     target,

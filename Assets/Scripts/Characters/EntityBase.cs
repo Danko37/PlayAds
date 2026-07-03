@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -36,10 +37,28 @@ namespace Characters
         {
             if(ScoreText == null) return;
             ScoreText.text = score.ToString();
-            
+
             if(ScoreBackImage == null) return;
 
             ScoreBackImage.color = ScoreBackColor;
+        }
+
+        /// <summary>
+        /// Плавно анимирует значение счётчика очков (from -> to) с пружинкой для красоты.
+        /// </summary>
+        public void AnimateScore(int from, int to, float time)
+        {
+            int current = from;
+
+            DOTween.To(() => current, v =>
+                {
+                    current = v;
+                    SetScore(v);
+                }, to, time)
+                .SetEase(Ease.OutCubic);
+
+            if (ScoreText != null)
+                ScoreText.transform.DOPunchScale(Vector3.one * 0.3f, 0.4f);
         }
     }
 }
