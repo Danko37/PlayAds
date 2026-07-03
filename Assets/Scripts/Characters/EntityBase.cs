@@ -1,6 +1,6 @@
-using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Characters
 {
@@ -13,7 +13,15 @@ namespace Characters
 
     public class EntityBase : InteractBase
     {
-        [SerializeField] protected TextMeshProUGUI ScoreText;
+        [SerializeField]
+        protected Image ScoreBackImage;
+        
+        [SerializeField] 
+        protected Color ScoreBackColor;
+        
+        [SerializeField] 
+        protected TextMeshProUGUI ScoreText;
+        
         [SerializeField]
         protected Animator animator;
         
@@ -21,13 +29,17 @@ namespace Characters
 
         private void Start()
         {
-            SetScoreText(Score);
+            SetScore(Score);
         }
 
-        public void SetScoreText(int score)
+        public void SetScore(int score)
         {
             if(ScoreText == null) return;
             ScoreText.text = score.ToString();
+            
+            if(ScoreBackImage == null) return;
+
+            ScoreBackImage.color = ScoreBackColor;
         }
     }
 }

@@ -22,7 +22,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform pathPointsParent;
     
     [Header("Settings")]
-    [SerializeField] private float pointHeight = 0.1f;
     [SerializeField] private GameObject pointPrefab;
     
     [SerializeField] private float moveSpeed = 8f;

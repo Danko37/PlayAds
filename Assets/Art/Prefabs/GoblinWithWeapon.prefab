@@ -59,7 +59,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.9450981, g: 0.050980397, b: 0.039215688, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -269,6 +269,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Characters.EnemyView
   entityType: 1
+  ScoreBackImage: {fileID: 3749646444203980922}
+  ScoreBackColor: {r: 0.94509804, g: 0.050980393, b: 0.039215688, a: 1}
   ScoreText: {fileID: 3687964141323277656}
   animator: {fileID: 7167172858250430886}
   Score: 4
@@ -526,7 +528,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -565,7 +567,7 @@ MonoBehaviour:
   m_enableAutoSizing: 1
   m_fontSizeMin: 0.1
   m_fontSizeMax: 1.4
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535

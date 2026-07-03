@@ -16,7 +16,10 @@ public class CollideManagerManager : MonoBehaviour
         switch (data.target.entityType)
         {
             case EntityType.Enemy:
-                StartBattle(data.target, data.hero);
+                if (data.target is EnemyView enemy)
+                {
+                    StartBattle(enemy, data.hero); 
+                }
                 break;
             case EntityType.Chest:
                 break;
@@ -30,7 +33,7 @@ public class CollideManagerManager : MonoBehaviour
         eventsSo.OnCollideEvent -= OnCollideCollideWithEntity;
     }
 
-    private void StartBattle(EntityBase enemy, HeroView  hero)
+    private void StartBattle(EnemyView enemy, HeroView  hero)
     {
         
     }
