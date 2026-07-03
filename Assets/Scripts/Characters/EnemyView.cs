@@ -3,13 +3,77 @@ using UnityEngine;
 
 namespace Characters
 {
-    public class EnemyView : EntityBase
+    public class EnemyView : EntityBase, IAttackAnimationReceiver
     {
         private static readonly int Die1 = Animator.StringToHash("die");
+        private static readonly int Attack1 = Animator.StringToHash("attack");
 
         [SerializeField] private Collider bodyCollider;
         [SerializeField] private float deathAnimDuration = 1f;
         [SerializeField] private float disappearDuration = 0.3f;
+
+        [Header("Атака по герою")]
+        [Tooltip("Трансформ модели врага, которую поворачиваем к герою.")]
+        [SerializeField] private Transform visualTransform;
+        [Tooltip("Изометрический сдвиг поворота (как -135 у героя). Подстрой под модель.")]
+        [SerializeField] private float rotationOffset = 135f;
+        [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
+        [SerializeField] private float fallbackHitDelay = 0.5f;
+
+        private HeroView _attackTarget;
+
+        /// <summary>
+        /// Мгновенно поворачивает врага в сторону цели (та же изометрическая логика, что у героя).
+        /// </summary>
+        public void FaceInstant(Vector3 targetWorldPos)
+        {
+            var t = visualTransform != null ? visualTransform : transform;
+
+            Vector3 dir = targetWorldPos - transform.position;
+            dir.y = 0;
+            if (dir.sqrMagnitude < 0.0001f)
+                return;
+
+            var worldDir = Quaternion.FromToRotation(Vector3.forward, dir.normalized).eulerAngles.y;
+            var res = worldDir - rotationOffset;
+
+            t.localRotation = res < 0
+                ? Quaternion.Euler(0, 360 - Mathf.Abs(res), 0)
+                : Quaternion.Euler(0, res, 0);
+        }
+
+        /// <summary>
+        /// Запускает анимацию удара по герою. Смерть героя срабатывает позже —
+        /// от animation event'а в середине удара (см. <see cref="OnAttackHit"/>).
+        /// </summary>
+        public void Attack(HeroView hero)
+        {
+            _attackTarget = hero;
+
+            if (animator != null && HasParameter(animator, Attack1))
+            {
+                // Есть анимация удара -> смерть героя дёрнет animation event (OnAttackHit).
+                animator.SetTrigger(Attack1);
+            }
+            else
+            {
+                // Нет анимации удара -> нет animation event: наносим удар сами через задержку.
+                DOVirtual.DelayedCall(fallbackHitDelay, OnAttackHit);
+            }
+        }
+
+        /// <summary>
+        /// Вызывается animation event'ом в момент удара врага (через AttackAnimationRelay).
+        /// Наносит герою смертельный удар.
+        /// </summary>
+        public void OnAttackHit()
+        {
+            if (_attackTarget == null)
+                return;
+
+            _attackTarget.OnKilled();
+            _attackTarget = null;
+        }
 
         /// <summary>
         /// Проигрывает смерть врага: анимация смерти (если есть в контроллере),

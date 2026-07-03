@@ -5,10 +5,16 @@ using UnityEngine.Events;
 
 namespace Characters
 {
-    public class HeroView : EntityBase
+    public class HeroView : EntityBase, IAttackAnimationReceiver
     {
         private static readonly int IsRun = Animator.StringToHash("isRun");
         private static readonly int Die1 = Animator.StringToHash("die");
+        private static readonly int Attack1 = Animator.StringToHash("attack");
+
+        [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
+        [SerializeField] private float _fallbackHitDelay = 0.5f;
+
+        private EnemyView _attackTarget;
 
         [SerializeField]
         private EventsSO events;
@@ -66,6 +72,53 @@ namespace Characters
         public void SetDie()
         {
             animator.SetTrigger(Die1);
+        }
+
+        /// <summary>
+        /// Запускает анимацию удара по врагу. Сама смерть врага срабатывает позже —
+        /// от animation event'а в середине удара (см. <see cref="OnAttackHit"/>).
+        /// </summary>
+        public void PlayAttack(EnemyView enemy)
+        {
+            _attackTarget = enemy;
+
+            if (HasParameter(animator, Attack1))
+            {
+                // Есть анимация удара -> смерть врага дёрнет animation event (OnAttackHit).
+                animator.SetTrigger(Attack1);
+            }
+            else
+            {
+                // Нет анимации удара -> нет animation event: наносим удар сами через задержку.
+                DOVirtual.DelayedCall(_fallbackHitDelay, OnAttackHit);
+            }
+        }
+
+        /// <summary>
+        /// Вызывается animation event'ом в момент удара (клинок в максимуме, ~середина анимации).
+        /// Здесь враг умирает: анимация смерти в его контроллере + эффект.
+        /// Событие в клипе удара навешивается в редакторе вручную.
+        /// </summary>
+        public void OnAttackHit()
+        {
+            if (_attackTarget == null)
+                return;
+
+            _attackTarget.Die();
+            _attackTarget = null;
+
+            // Итог боя для игровой логики / UI.
+            events.RaiseHeroWin();
+        }
+
+        /// <summary>
+        /// Вызывается, когда враг наносит герою смертельный удар (EnemyView.OnAttackHit).
+        /// Проигрывает смерть героя и поднимает событие проигрыша.
+        /// </summary>
+        public void OnKilled()
+        {
+            SetDie();
+            events.RaiseHeroLose();
         }
 
         /// <summary>

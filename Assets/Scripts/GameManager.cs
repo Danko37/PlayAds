@@ -29,6 +29,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float dotFadeDistance = 0.6f;
     [SerializeField] private HeroView heroView;
 
+    [Tooltip("Длительность анимации удара героя (сек) до возврата в Idle.")]
+    [SerializeField] private float attackDuration = 1f;
+
     private Coroutine moveCoroutine;
 
     private readonly List<Vector3> currentPath = new();
@@ -70,10 +73,9 @@ public class GameManager : MonoBehaviour
         heroView.SetRun(false);
     }
 
-    private void HandleBattleWin()
+    private void HandleBattleWin(EnemyView enemy)
     {
-        // После победы герой остаётся стоять на месте боя, маршрут прерывается.
-        PlayerState = PlayerState.Idle;
+        // Победа: маршрут прерываем и запускаем сцену удара по врагу.
         heroView.SetRun(false);
 
         if (moveCoroutine != null)
@@ -83,19 +85,50 @@ public class GameManager : MonoBehaviour
         }
 
         ClearDots();
+
+        StartCoroutine(AttackRoutine(enemy));
     }
 
-    private void HandleBattleLose()
+    private IEnumerator AttackRoutine(EnemyView enemy)
     {
+        // Остаёмся в Fighting: ввод заблокирован, пока герой бьёт.
+        // 1) Поворот в сторону врага (та же логика поворота, что и при движении).
+        Vector3 dir = enemy.transform.position - heroView.transform.position;
+        dir.y = 0;
+        CharacterRotate(dir);
+
+        // 2) Анимация удара. Враг умирает от animation event'а в середине удара
+        //    (event дёргает HeroView.OnAttackHit -> enemy.Die()).
+        heroView.PlayAttack(enemy);
+
+        yield return new WaitForSeconds(attackDuration);
+
+        // 3) После удара герой возвращается в InitRotation и в Idle (как при обычной остановке).
+        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+        PlayerState = PlayerState.Idle;
+    }
+
+    private void HandleBattleLose(EnemyView enemy)
+    {
+        // Игра окончена: ввод заблокирован. Смерть героя проиграется на strike-евенте врага.
         PlayerState = PlayerState.Dead;
         heroView.SetRun(false);
-        heroView.SetDie();
 
         if (moveCoroutine != null)
         {
             StopCoroutine(moveCoroutine);
             moveCoroutine = null;
         }
+
+        ClearDots();
+
+        // Герой встаёт в initial поворот и idle (как при обычной остановке).
+        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+
+        // Враг мгновенно поворачивается к герою и бьёт; смерть героя — на strike-евенте
+        // (relay -> EnemyView.OnAttackHit -> HeroView.OnKilled -> SetDie + RaiseHeroLose).
+        enemy.FaceInstant(heroView.transform.position);
+        enemy.Attack(heroView);
     }
 
     private void MoveToPoint(Vector3 target)

@@ -52,21 +52,21 @@ public class CollideManagerManager : MonoBehaviour
         if (heroWon)
         {
             var scoreAnimationTime = 0.4f;
-            
+
             int from = hero.Score;
             hero.Score += enemy.Score;
-            
+
             hero.AnimateScore(from, hero.Score, scoreAnimationTime);
 
-            enemy.Die();
-
-            // Даём счётчику отыграть, затем возобновляем движение.
-            yield return new WaitForSeconds(scoreAnimationTime);
-            eventsSo.RaiseBattleWin();
+            // Герой поворачивается к врагу и бьёт. Смерть врага срабатывает
+            // от animation event'а удара (HeroView.OnAttackHit -> enemy.Die()).
+            eventsSo.RaiseBattleWin(enemy);
         }
         else
         {
-            eventsSo.RaiseBattleLose();
+            // Враг поворачивается к герою и бьёт. Смерть героя срабатывает
+            // от animation event'а удара врага (EnemyView.OnAttackHit -> hero.OnKilled()).
+            eventsSo.RaiseBattleLose(enemy);
         }
     }
 }
