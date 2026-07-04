@@ -36,8 +36,12 @@ public class SpriteAnimator : MonoBehaviour
     public void Play(string clipName)
     {
         if(currentCoroutine != null) StopCoroutine(currentCoroutine);
-        
+
         var currentClip = animationClips.Find(x => x.Name == clipName);
+        if (currentClip == null) return;
+
+        // Рендерер мог быть погашен по окончании прошлого клипа — включаем обратно.
+        spriteRenderer.enabled = true;
         currentCoroutine = StartCoroutine(PlayAnimation(currentClip));
     }
     
@@ -58,14 +62,16 @@ public class SpriteAnimator : MonoBehaviour
             {
                 spriteRenderer.sprite = clip.Frames[i];
                 yield return new WaitForSeconds(frameDuration);
-                if(!clip.Loop && i == frameCount - 1)
-                    
-                {
-                    onAnimationFinished?.Invoke();
-                }
             }
-            
-            
         } while (clip.Loop);
+
+        currentCoroutine = null;
+
+        // Гасим рендерер ДО события: подписчик выключит объект в этом же кадре,
+        // и за время до выключения не мелькнёт ни последний, ни первый кадр.
+        spriteRenderer.sprite = null;
+        spriteRenderer.enabled = false;
+
+        onAnimationFinished?.Invoke();
     }
 }

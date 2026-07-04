@@ -37,6 +37,9 @@ public class Chest : EntityBase
     private float swordRiseDuration = 0.25f;
     [SerializeField]
     private float swordFlyDuration = 0.4f;
+    [Tooltip("Длительность схлопывания сундука в ноль после того, как меч долетел до героя.")]
+    [SerializeField]
+    private float chestDisappearDuration = 0.2f;
 
     private bool _opened;
 
@@ -94,6 +97,9 @@ public class Chest : EntityBase
         {
             onGetSword?.Invoke();
             SwordItem.SetActive(false);
+
+            // Сундук схлопывается в ноль.
+            chestRoot.DOScale(0f, chestDisappearDuration).SetEase(Ease.InBack);
         });
     }
 }
