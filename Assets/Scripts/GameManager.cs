@@ -55,6 +55,8 @@ public class GameManager : MonoBehaviour
         heroView.Events.OnBattleStart += HandleBattleStart;
         heroView.Events.OnBattleWin += HandleBattleWin;
         heroView.Events.OnBattleLose += HandleBattleLose;
+        heroView.Events.OnChestOpenStart += HandleChestOpenStart;
+        heroView.Events.OnChestOpened += HandleChestOpened;
     }
 
     private void OnDisable()
@@ -65,6 +67,8 @@ public class GameManager : MonoBehaviour
         heroView.Events.OnBattleStart -= HandleBattleStart;
         heroView.Events.OnBattleWin -= HandleBattleWin;
         heroView.Events.OnBattleLose -= HandleBattleLose;
+        heroView.Events.OnChestOpenStart -= HandleChestOpenStart;
+        heroView.Events.OnChestOpened -= HandleChestOpened;
     }
 
     private void HandleBattleStart()
@@ -129,6 +133,32 @@ public class GameManager : MonoBehaviour
         // (relay -> EnemyView.OnAttackHit -> HeroView.OnKilled -> SetDie + RaiseHeroLose).
         enemy.FaceInstant(heroView.transform.position);
         enemy.Attack(heroView);
+    }
+
+    private void HandleChestOpenStart()
+    {
+        // Герой встаёт у сундука и ждёт: маршрут прерываем, ввод блокируем.
+        heroView.SetRun(false);
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+
+        ClearDots();
+
+        // «Занят»: HandleClick срабатывает только в Idle, поэтому ввод заблокирован.
+        PlayerState = PlayerState.Fighting;
+
+        // Встаём в initial поворот (как при обычной остановке).
+        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+    }
+
+    private void HandleChestOpened()
+    {
+        // Меч получен — управление возвращается.
+        PlayerState = PlayerState.Idle;
     }
 
     private void MoveToPoint(Vector3 target)

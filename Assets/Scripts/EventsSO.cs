@@ -22,6 +22,10 @@ public class EventsSO : ScriptableObject
     public event Action OnHeroWin;
     public event Action OnHeroLose;
 
+    // Открытие сундука: герой встаёт и ждёт (ввод off), затем получает меч (ввод on).
+    public event Action OnChestOpenStart;
+    public event Action OnChestOpened;
+
     public void OnCollideEventRaise(CollideData data)
     {
         OnCollideEvent?.Invoke(data);
@@ -33,4 +37,7 @@ public class EventsSO : ScriptableObject
 
     public void RaiseHeroWin() => OnHeroWin?.Invoke();
     public void RaiseHeroLose() => OnHeroLose?.Invoke();
+
+    public void RaiseChestOpenStart() => OnChestOpenStart?.Invoke();
+    public void RaiseChestOpened() => OnChestOpened?.Invoke();
 }

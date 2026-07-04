@@ -1,7 +1,7 @@
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Events;
 
 namespace Characters
 {
@@ -10,34 +10,48 @@ namespace Characters
         private static readonly int IsRun = Animator.StringToHash("isRun");
         private static readonly int Die1 = Animator.StringToHash("die");
         private static readonly int Attack1 = Animator.StringToHash("attack");
+        private static readonly int Update1 = Animator.StringToHash("update");
 
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
-        [SerializeField] private float _fallbackHitDelay = 0.5f;
-
-        private EnemyView _attackTarget;
-
+        [SerializeField] 
+        private float _fallbackHitDelay = 0.5f;
+        
         [SerializeField]
         private EventsSO events;
+        
         [SerializeField]
         private Transform _heroVisualTransform;
+        
         [SerializeField]
         private Transform _heroVisualTransformWithSword;
-
-      
+        
         // DF_Knight_2_idle (активна на старте)
-        [SerializeField] private GameObject heroWithoutSwordModel;   
+        [SerializeField] 
+        private GameObject heroWithoutSwordModel; 
+        
         // DF_Knight_2_attack_02 (выключена на старте)
-        [SerializeField] private GameObject heroWithSwordModel;    
+        [SerializeField] 
+        private GameObject heroWithSwordModel;
+        
         // аниматор модели с мечом
-        [SerializeField] private Animator swordAnimator;      
-        [SerializeField, Range(0.1f, 1f)] private float shrinkFactor = 0.8f;
-        [SerializeField] private float shrinkDuration = 0.15f;
-        [SerializeField] private float growDuration = 0.25f;
-        [Tooltip("Хук для эффекта из спрайт-рендерера во время смены модели.")]
-        [SerializeField] private UnityEvent onSwordEquipped;
+        [SerializeField] 
+        private Animator swordAnimator; 
+        
+        [SerializeField, 
+         Range(0.1f, 1f)] private float shrinkFactor = 0.8f;
+        
+        [SerializeField] 
+        private float shrinkDuration = 0.15f;
+        
+        [SerializeField] 
+        private float growDuration = 0.25f;
+        
+        [SerializeField]
+        private SpriteAnimator EffectPrefab;
 
         private bool _hasSword;
         private bool _isRunning;
+        private EnemyView _attackTarget;
 
         public EventsSO Events => events;
 
@@ -47,10 +61,9 @@ namespace Characters
 
         [SerializeField]
         private NavMeshAgent _navMeshAgent;
-
-        public float InitialYRotation { get; private set; }
-
         public NavMeshAgent NavMeshAgent => _navMeshAgent;
+        
+        public float InitialYRotation { get; private set; }
         void Start()
         {
             _navMeshAgent.updateRotation = false;
@@ -61,8 +74,20 @@ namespace Characters
             _navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
         
             InitialYRotation = _heroVisualTransform.localRotation.eulerAngles.y;
+
+            EffectPrefab.onAnimationFinished += EffectHandler;
         }
-        
+
+        private void OnDestroy()
+        {
+            EffectPrefab.onAnimationFinished -= EffectHandler;
+        }
+
+        private void EffectHandler()
+        {
+            EffectPrefab.gameObject.SetActive(false);
+        }
+
         public void SetRun(bool run)
         {
             _isRunning = run;
@@ -134,8 +159,7 @@ namespace Characters
 
             _hasSword = true;
 
-            // Эффект из спрайт-рендерера и прочее — вешается в инспекторе.
-            onSwordEquipped?.Invoke();
+            EffectPrefab.gameObject.SetActive(true);
 
             var swordlessScale = heroWithoutSwordModel.transform.localScale;
             var swordTargetScale = heroWithSwordModel.transform.localScale;
@@ -155,12 +179,16 @@ namespace Characters
 
                     // 3) дальше код управляет новым аниматором.
                     animator = swordAnimator;
-                    
+
                     //подменяем ссылки для вращения персонажа
                     _heroVisualTransform = _heroVisualTransformWithSword;
-                    
+
                     if (HasParameter(animator, IsRun))
                         animator.SetBool(IsRun, _isRunning);
+
+                    // Модель с мечом появилась — дёргаем триггер update её аниматора.
+                    if (HasParameter(animator, Update1))
+                        animator.SetTrigger(Update1);
 
                     heroWithSwordModel.transform
                         .DOScale(swordTargetScale, growDuration)
@@ -189,7 +217,8 @@ namespace Characters
 
             var data = new CollideData
                 { hero = this,  target = collideEntity};
-            if (collideEntity.entityType == EntityType.Enemy)
+            if (collideEntity.entityType == EntityType.Enemy ||
+                collideEntity.entityType == EntityType.Chest)
             {
                 events.OnCollideEventRaise(data);
             }

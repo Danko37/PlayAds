@@ -3,17 +3,34 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(SpriteRenderer))]
 public class SpriteAnimator : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer spriteRenderer;
     
     [SerializeField] private List<FrameAnimationClip> animationClips;
 
+    [Tooltip("запускает первый клип при включении объекта")]
+    [SerializeField] private bool playOnEnable;
+
     Coroutine currentCoroutine;
 
-    private void Start()
+    public event Action onAnimationFinished;
+
+    private void Awake()
     {
-        Play(animationClips[0].Name);
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>(); 
+        }
+    }
+
+    private void OnEnable()
+    {
+        if(playOnEnable && animationClips.Count > 0)
+        {
+            Play(animationClips[0].Name);
+        }
     }
 
     public void Play(string clipName)
@@ -32,16 +49,23 @@ public class SpriteAnimator : MonoBehaviour
 
     IEnumerator PlayAnimation(FrameAnimationClip clip)
     {
-        int frameCount = clip.Frames.Length;
-        float frameDuration = 1f / clip.FPS;
+        var frameCount = clip.Frames.Length;
+        var frameDuration = 1f / clip.FPS;
 
         do
         {
-            for (int i = 0; i < frameCount; i++)
+            for (var i = 0; i < frameCount; i++)
             {
                 spriteRenderer.sprite = clip.Frames[i];
                 yield return new WaitForSeconds(frameDuration);
+                if(!clip.Loop && i == frameCount - 1)
+                    
+                {
+                    onAnimationFinished?.Invoke();
+                }
             }
+            
+            
         } while (clip.Loop);
     }
 }

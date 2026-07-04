@@ -3,6 +3,9 @@ using System.Collections;
 using Characters;
 using UnityEngine;
 
+/// <summary>
+/// Класс обрабатывает столкновения с игровыми сузностями и выполняет действия в зависимости от типа сущьности
+/// </summary>
 public class CollideManagerManager : MonoBehaviour
 {
     [SerializeField] private EventsSO eventsSo;
@@ -23,6 +26,10 @@ public class CollideManagerManager : MonoBehaviour
                 }
                 break;
             case EntityType.Chest:
+                if (data.target is Chest chest)
+                {
+                    OpenChest(chest, data.hero);
+                }
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -32,6 +39,20 @@ public class CollideManagerManager : MonoBehaviour
     private void OnDestroy()
     {
         eventsSo.OnCollideEvent -= OnCollideCollideWithEntity;
+    }
+
+    private void OpenChest(Chest chest, HeroView hero)
+    {
+        // Герой встаёт у сундука, ввод выключается (см. GameManager.HandleChestOpenStart).
+        eventsSo.RaiseChestOpenStart();
+
+        // Сундук проигрывает анимацию открытия и «выдаёт» меч. Когда меч долетает до героя —
+        // экипируем меч и возвращаем управление.
+        chest.OpenChest(hero.transform, () =>
+        {
+            hero.EquipSword();
+            eventsSo.RaiseChestOpened();
+        });
     }
 
     private void StartBattle(EnemyView enemy, HeroView  hero)
