@@ -329,7 +329,10 @@ public class GameManager : MonoBehaviour
     
     void HandleClick()
     {
-        if (PlayerState != PlayerState.Idle)
+        // Кликать можно и стоя (Idle), и уже в движении (Moving) — путь перестроится
+        // от текущей позиции персонажа. Во время боя/сундука (Fighting), смерти (Dead)
+        // и победы (Win) ввод остаётся заблокированным.
+        if (PlayerState != PlayerState.Idle && PlayerState != PlayerState.Moving)
             return;
         
         if (UnityEngine.InputSystem.Mouse.current == null)
