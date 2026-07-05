@@ -41,13 +41,18 @@ namespace Characters
          Range(0.1f, 1f)] private float shrinkFactor = 0.8f;
         
         [SerializeField] 
-        private float shrinkDuration = 0.15f;
+        private float shrinkDuration = 0.25f;
         
         [SerializeField] 
         private float growDuration = 0.25f;
         
         [SerializeField]
         private SpriteAnimator EffectPrefab;
+        
+        [SerializeField]
+        private Transform swordTarget;
+        
+        public Transform SwordTarget => swordTarget;
 
         private bool _hasSword;
         private bool _isRunning;
@@ -64,7 +69,7 @@ namespace Characters
         public NavMeshAgent NavMeshAgent => _navMeshAgent;
         
         public float InitialYRotation { get; private set; }
-        void Start()
+        private void Awake()
         {
             _navMeshAgent.updateRotation = false;
             _navMeshAgent.autoBraking = false;
@@ -128,7 +133,8 @@ namespace Characters
         {
             if (_attackTarget == null)
                 return;
-
+            
+            AnimateScore(Score, Score + _attackTarget.Score, 0.4f);
             _attackTarget.Die();
             _attackTarget = null;
 

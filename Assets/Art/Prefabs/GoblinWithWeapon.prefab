@@ -273,7 +273,13 @@ MonoBehaviour:
   ScoreBackColor: {r: 0.94509804, g: 0.050980393, b: 0.039215688, a: 1}
   ScoreText: {fileID: 3687964141323277656}
   animator: {fileID: 7167172858250430886}
-  Score: 4
+  Score: 15
+  bodyCollider: {fileID: 5245445079719149684}
+  deathAnimDuration: 1
+  disappearDuration: 0.3
+  visualTransform: {fileID: 3861490786464650204}
+  rotationOffset: 135
+  fallbackHitDelay: 0.5
 --- !u!1 &3460845203729961879
 GameObject:
   m_ObjectHideFlags: 0
@@ -285,7 +291,6 @@ GameObject:
   - component: {fileID: 817943801048473625}
   - component: {fileID: 2347911880953423364}
   - component: {fileID: 4063495420589128307}
-  - component: {fileID: 5301063763495482264}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -345,7 +350,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3460845203729961879}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
@@ -361,23 +366,6 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 1
---- !u!114 &5301063763495482264
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3460845203729961879}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!1 &4502747614287212736
 GameObject:
   m_ObjectHideFlags: 0
@@ -795,13 +783,33 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ab3d3c0fb49b26044b517d037a8579df, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3505874727018872141}
   m_SourcePrefab: {fileID: 100100000, guid: ab3d3c0fb49b26044b517d037a8579df, type: 3}
 --- !u!4 &3861490786464650204 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ab3d3c0fb49b26044b517d037a8579df, type: 3}
   m_PrefabInstance: {fileID: 3610897427526464567}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4529800739750087014 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ab3d3c0fb49b26044b517d037a8579df, type: 3}
+  m_PrefabInstance: {fileID: 3610897427526464567}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3505874727018872141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4529800739750087014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 753a0f13db85eb744987e15ae932d36d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Characters.AttackAnimationRelay
 --- !u!95 &7167172858250430886 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: ab3d3c0fb49b26044b517d037a8579df, type: 3}

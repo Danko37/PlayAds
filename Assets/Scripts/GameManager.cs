@@ -30,7 +30,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private HeroView heroView;
 
     [Tooltip("Длительность анимации удара героя (сек) до возврата в Idle.")]
-    [SerializeField] private float attackDuration = 1f;
+    [SerializeField] private float attackDuration = 1.1f;
 
     private Coroutine moveCoroutine;
 
@@ -268,8 +268,6 @@ public class GameManager : MonoBehaviour
         if (currentPath.Count < 2)
             return;
 
-        float delay = 0f;
-
         for (int i = 0; i < currentPath.Count - 1; i++)
         {
             var start = currentPath[i];
@@ -345,7 +343,7 @@ public class GameManager : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(mousePosition.x, mousePosition.y, 0));
         RaycastHit hit;
         
-        if (Physics.Raycast(ray, out hit, 100f))
+        if (Physics.Raycast(ray, out hit, 100f, 1 << 3))
         {
             NavMeshHit navHit;
             if (NavMesh.SamplePosition(hit.point, out navHit, 2f, NavMesh.AllAreas))

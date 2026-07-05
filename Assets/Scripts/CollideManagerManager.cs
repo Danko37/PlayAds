@@ -48,17 +48,13 @@ public class CollideManagerManager : MonoBehaviour
 
         // Сундук проигрывает анимацию открытия и «выдаёт» меч. Когда меч долетает до героя —
         // экипируем меч, переносим очки сундука герою и возвращаем управление.
-        chest.OpenChest(hero.transform, () =>
+        chest.OpenChest(hero, () =>
         {
             // Очки сундука переходят герою (как от врагов): счётчик героя растёт, счётчик сундука обнуляется.
             var scoreAnimationTime = 0.4f;
-
-            int from = hero.Score;
-            hero.Score += chest.Score;
-            hero.AnimateScore(from, hero.Score, scoreAnimationTime);
-
-            chest.AnimateScore(chest.Score, 0, scoreAnimationTime);
-            chest.Score = 0;
+            
+            hero.AnimateScore(hero.Score, hero.Score + chest.Score, scoreAnimationTime);
+            //chest.Score = 0;
 
             hero.EquipSword();
             eventsSo.RaiseChestOpened();
@@ -85,10 +81,8 @@ public class CollideManagerManager : MonoBehaviour
             var scoreAnimationTime = 0.4f;
 
             int from = hero.Score;
-            hero.Score += enemy.Score;
-
-            hero.AnimateScore(from, hero.Score, scoreAnimationTime);
-
+            
+            //enemy.AnimateScore(enemy.Score, 0, scoreAnimationTime);
             // Герой поворачивается к врагу и бьёт. Смерть врага срабатывает
             // от animation event'а удара (HeroView.OnAttackHit -> enemy.Die()).
             eventsSo.RaiseBattleWin(enemy);

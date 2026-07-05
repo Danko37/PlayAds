@@ -26,6 +26,9 @@ namespace Characters
         [SerializeField]
         protected Animator animator;
         
+        [SerializeField]
+        protected GameObject ColorCircleGo;
+        
         public int Score;
 
         private void Start()
@@ -35,11 +38,20 @@ namespace Characters
 
         public void SetScore(int score)
         {
+            SetTextScore(score);
+            SetTextBackColor();
+            
+            Score = score;
+        }
+
+        private void SetTextScore(int score)
+        {
             if(ScoreText == null) return;
             ScoreText.text = score.ToString();
+        }
 
-            if(ScoreBackImage == null) return;
-
+        private void SetTextBackColor()
+        {
             ScoreBackImage.color = ScoreBackColor;
         }
 

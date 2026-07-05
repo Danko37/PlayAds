@@ -9,7 +9,7 @@ namespace Characters
         private static readonly int Attack1 = Animator.StringToHash("attack");
 
         [SerializeField] private Collider bodyCollider;
-        [SerializeField] private float deathAnimDuration = 1f;
+        [SerializeField] private float deathAnimDuration = 0.3f;
         [SerializeField] private float disappearDuration = 0.3f;
 
         [Header("Атака по герою")]
@@ -19,6 +19,9 @@ namespace Characters
         [SerializeField] private float rotationOffset = 135f;
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
         [SerializeField] private float fallbackHitDelay = 0.5f;
+        [SerializeField]
+        private CanvasGroup scoreCanvasGroup;
+        
 
         private HeroView _attackTarget;
 
@@ -91,12 +94,17 @@ namespace Characters
             // (у моделей без death-клипа его нет — просто пропускаем без варнингов).
             if (animator != null && HasParameter(animator, Die1))
                 animator.SetTrigger(Die1);
-
-            // TODO: VFX эффект исчезновения трупа
+            
+            scoreCanvasGroup.DOFade(0f, 0.4f);
+            
+            AnimateScore(Score, 0, 0.4f);
+            
+            ColorCircleGo.SetActive(false);
+            
             DOVirtual.DelayedCall(deathAnimDuration, () =>
             {
                 if (this == null) return;
-
+                
                 transform.DOScale(0f, disappearDuration)
                     .SetEase(Ease.InBack)
                     .OnComplete(() =>
