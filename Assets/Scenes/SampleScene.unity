@@ -680,6 +680,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PathDot
   initRotation: {x: 38.404427, y: 3.1675055, z: 44.51079}
   sprite: {fileID: 650292259}
+  shownScale: 1
 --- !u!1001 &752970262
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -956,8 +957,9 @@ MonoBehaviour:
   pathPointsParent: {fileID: 1636042116}
   pointPrefab: {fileID: 650292258}
   moveSpeed: 8
-  dotSpacing: 0.4
-  dotFadeDistance: 0.6
+  dotSpacing: 1.4
+  dotFadeDistance: 1
+  maxDotAlpha: 0.5
   heroView: {fileID: 803730552}
   attackDuration: 1
 --- !u!1 &967357851

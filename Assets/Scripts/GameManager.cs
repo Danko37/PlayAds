@@ -27,6 +27,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float dotSpacing = 50f;
     [SerializeField] private float dotFadeDistance = 0.6f;
+    [Tooltip("Базовая (максимальная) прозрачность точек маршрута.")]
+    [SerializeField, Range(0f, 1f)] private float maxDotAlpha = 0.5f;
     [SerializeField] private HeroView heroView;
 
     [Tooltip("Длительность анимации удара героя (сек) до возврата в Idle.")]
@@ -219,7 +221,7 @@ public class GameManager : MonoBehaviour
                     target,
                     moveSpeed * Time.deltaTime);
 
-                UpdateDots();
+                UpdateDots(target);
 
                 yield return null;
             }
@@ -268,59 +270,74 @@ public class GameManager : MonoBehaviour
         if (currentPath.Count < 2)
             return;
 
+        // Раскладываем точки равномерно вдоль ВСЕЙ ломаной пути (общий шаг dotSpacing),
+        // а не посегментно с рестартом в каждой вершине — иначе на коротких сегментах
+        // точки соседних углов накладываются друг на друга.
+        float traveled = 0f;       // накопленная длина пройденной части ломаной
+        float nextAt = dotSpacing; // дистанция до следующей точки (не спавним под ногами)
+
         for (int i = 0; i < currentPath.Count - 1; i++)
         {
             var start = currentPath[i];
             var end = currentPath[i + 1];
 
-            var distance = Vector3.Distance(start, end);
+            float segLen = Vector3.Distance(start, end);
+            if (segLen < 0.0001f)
+                continue;
 
-            var dotCount = Mathf.FloorToInt(distance / dotSpacing);
+            var direction = (end - start) / segLen;
 
-            var direction = (end - start).normalized;
-
-            for (int j = 0; j <= dotCount; j++)
+            // Все отметки шага, попавшие в этот сегмент.
+            while (nextAt <= traveled + segLen)
             {
-                var position = start + direction * (j * dotSpacing);
+                var position = start + direction * (nextAt - traveled);
 
                 var obj = Instantiate(
                     pointPrefab,
                     position,
                     Quaternion.identity,
                     pathPointsParent);
-                
+
                 var dot = obj.GetComponent<PathDot>();
-                
+
                 dot.transform.rotation = Quaternion.Euler(dot.InitRotation);
-                
+
                 activeDots.Add(dot);
 
                 dot.Show(0);
+                dot.SetAlpha(maxDotAlpha);
 
-                //delay += 0.02f;
+                nextAt += dotSpacing;
             }
+
+            traveled += segLen;
         }
     }
     
-    private void UpdateDots()
+    private void UpdateDots(Vector3 target)
     {
+        Vector3 heroPos = heroView.transform.position;
+        Vector3 moveDir = target - heroPos;
+        moveDir.y = 0;
+
         for (int i = activeDots.Count - 1; i >= 0; i--)
         {
             var dot = activeDots[i];
 
-            var d = Vector3.Distance(
-                heroView.transform.position,
-                dot.transform.position);
+            // Считаем по горизонтали — не зависим от высоты пивота/навмеша.
+            Vector3 delta = dot.transform.position - heroPos;
+            delta.y = 0;
+            float d = delta.magnitude;
 
+            // Гаснем по мере приближения героя (в пределах fade-радиуса).
             if (d < dotFadeDistance)
-            {
-                dot.SetAlpha(d / dotFadeDistance);
+                dot.SetAlpha((d / dotFadeDistance) * maxDotAlpha);
 
-                if (d < 0.1f)
-                {
-                    Destroy(dot.gameObject);
-                    activeDots.RemoveAt(i);
-                }
+            // Точка пройдена: она близко и уже позади направления движения — удаляем.
+            if (d < dotFadeDistance && Vector3.Dot(delta, moveDir) < 0f)
+            {
+                Destroy(dot.gameObject);
+                activeDots.RemoveAt(i);
             }
         }
     }

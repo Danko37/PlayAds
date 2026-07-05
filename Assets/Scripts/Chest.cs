@@ -15,8 +15,6 @@ public class Chest : EntityBase
     private SpriteAnimator openEffect2;
     [SerializeField]
     private GameObject SwordItem;
-    [SerializeField]
-    private CanvasGroup scoreCanvasGroup;
 
     [Header("Открытие")]
     [Tooltip("Узел, который масштабируем при открытии (ChestRoot). Не весь Chest — иначе заскейлится Canvas/Score.")]
