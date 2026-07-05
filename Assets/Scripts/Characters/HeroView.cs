@@ -157,7 +157,6 @@ namespace Characters
         /// модель с мечом активируется и твинингом вырастает до нормы. После смены
         /// код управляет уже новым аниматором (swordAnimator).
         /// </summary>
-        [ContextMenu("Equip Sword (test)")]
         public void EquipSword()
         {
             if (_hasSword || heroWithSwordModel == null || heroWithoutSwordModel == null || swordAnimator == null)

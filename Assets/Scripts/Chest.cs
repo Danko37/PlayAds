@@ -128,7 +128,7 @@ public class Chest : EntityBase
         seq.Join(SwordItem.transform.DOScale(swordScale, swordRiseDuration));
         // 5) Меч летит к герою.
         seq.Append(SwordItem.transform.DOMove(hero.SwordTarget.position, swordFlyDuration).SetEase(Ease.InSine));
-
+        seq.Join(SwordItem.transform.DOScale(SwordItem.transform.localScale * 0.8f, swordFlyDuration));
         seq.AppendCallback(() =>
         {
             onGetSword?.Invoke();
