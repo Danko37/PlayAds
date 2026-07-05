@@ -28,7 +28,11 @@ namespace Characters
         
         [SerializeField]
         protected GameObject ColorCircleGo;
-        
+
+        [Tooltip("CanvasGroup со счётом — гаснет при проигрыше этой сущности.")]
+        [SerializeField]
+        protected CanvasGroup scoreCanvasGroup;
+
         public int Score;
 
         private void Start()
@@ -71,6 +75,21 @@ namespace Characters
 
             if (ScoreText != null)
                 ScoreText.transform.DOPunchScale(Vector3.one * 0.3f, 0.4f);
+        }
+
+        /// <summary>
+        /// Визуал поражения этой сущности: счёт гаснет (CanvasGroup), значение уезжает в 0,
+        /// круг под ногами выключается. Одинаково для врага (Die) и героя (OnKilled).
+        /// </summary>
+        public void PlayDefeatScore(float time)
+        {
+            if (scoreCanvasGroup != null)
+                scoreCanvasGroup.DOFade(0f, time);
+
+            AnimateScore(Score, 0, time);
+
+            if (ColorCircleGo != null)
+                ColorCircleGo.SetActive(false);
         }
     }
 }

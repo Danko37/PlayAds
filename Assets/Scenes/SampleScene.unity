@@ -1088,6 +1088,23 @@ Transform:
   - {fileID: 534434214}
   m_Father: {fileID: 1636042116}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!1 &1217369221 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5062977010322045898, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
+  m_PrefabInstance: {fileID: 802885947601100665}
+  m_PrefabAsset: {fileID: 0}
+--- !u!225 &1217369225
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1217369221}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &1355435798 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 9bc41d8e1d47c574d9129c38e7de463a, type: 3}
@@ -1237,11 +1254,11 @@ Transform:
   - {fileID: 30683459}
   - {fileID: 19092903}
   - {fileID: 3340229371688671414}
+  - {fileID: 1912990361}
   - {fileID: 2067019051}
   - {fileID: 504706627}
   - {fileID: 893295573}
   - {fileID: 1156336881}
-  - {fileID: 1912990361}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 180, y: 0, z: 180}
 --- !u!1 &1714021344
@@ -1610,6 +1627,10 @@ PrefabInstance:
       propertyPath: scoreCanvasGroup
       value: 
       objectReference: {fileID: 1574579321}
+    - target: {fileID: 2948538529407628820, guid: 1b3447ea2c861304d9627b0935647f20, type: 3}
+      propertyPath: deathAnimDuration
+      value: 1.4
+      objectReference: {fileID: 0}
     - target: {fileID: 2977408158446177874, guid: 1b3447ea2c861304d9627b0935647f20, type: 3}
       propertyPath: m_Name
       value: GoblinWithWeapon
@@ -1670,14 +1691,30 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1636042116}
     m_Modifications:
+    - target: {fileID: 4308288741352550137, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.502
+      objectReference: {fileID: 0}
     - target: {fileID: 4421555171702456778, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 330585545}
+    - target: {fileID: 5519936461399665287, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6604359921218176249, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
       propertyPath: ColorCircleGo
       value: 
       objectReference: {fileID: 1556997146}
+    - target: {fileID: 6604359921218176249, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
+      propertyPath: shrinkDuration
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6604359921218176249, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
+      propertyPath: scoreCanvasGroup
+      value: 
+      objectReference: {fileID: 1217369225}
     - target: {fileID: 7170863638616011141, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
       propertyPath: m_Name
       value: Hero
@@ -1725,7 +1762,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5062977010322045898, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1217369225}
   m_SourcePrefab: {fileID: 100100000, guid: 95b5fe628d50bb84d89742adde9806eb, type: 3}
 --- !u!1001 &837685899522950936
 PrefabInstance:
@@ -1969,7 +2009,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3535458337161780179, guid: 8a14eb090994d9542bfd72c146afb30f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.27
+      value: 0.34
       objectReference: {fileID: 0}
     - target: {fileID: 3535458337161780179, guid: 8a14eb090994d9542bfd72c146afb30f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1996,9 +2036,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1906226376}
     - target: {fileID: 6427488103613660365, guid: 8a14eb090994d9542bfd72c146afb30f, type: 3}
+      propertyPath: openEffectClip2
+      value: OpenChest
+      objectReference: {fileID: 0}
+    - target: {fileID: 6427488103613660365, guid: 8a14eb090994d9542bfd72c146afb30f, type: 3}
       propertyPath: scoreCanvasGroup
       value: 
       objectReference: {fileID: 1122996768}
+    - target: {fileID: 6530796323911124519, guid: 8a14eb090994d9542bfd72c146afb30f, type: 3}
+      propertyPath: m_Radius
+      value: 0.66
+      objectReference: {fileID: 0}
     - target: {fileID: 7601709925977186199, guid: 8a14eb090994d9542bfd72c146afb30f, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.20994088

@@ -148,6 +148,9 @@ namespace Characters
         /// </summary>
         public void OnKilled()
         {
+            // Счёт героя гаснет, уезжает в 0, круг под ногами выключается (зеркально смерти врага).
+            PlayDefeatScore(0.4f);
+
             SetDie();
             events.RaiseHeroLose();
         }

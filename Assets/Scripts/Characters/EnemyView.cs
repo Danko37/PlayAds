@@ -19,9 +19,6 @@ namespace Characters
         [SerializeField] private float rotationOffset = 135f;
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
         [SerializeField] private float fallbackHitDelay = 0.5f;
-        [SerializeField]
-        private CanvasGroup scoreCanvasGroup;
-        
 
         private HeroView _attackTarget;
 
@@ -74,6 +71,9 @@ namespace Characters
             if (_attackTarget == null)
                 return;
 
+            // Очки героя перетекают врагу (зеркально победе героя): у врага счётчик растёт.
+            AnimateScore(Score, Score + _attackTarget.Score, 0.4f);
+
             _attackTarget.OnKilled();
             _attackTarget = null;
         }
@@ -94,13 +94,10 @@ namespace Characters
             // (у моделей без death-клипа его нет — просто пропускаем без варнингов).
             if (animator != null && HasParameter(animator, Die1))
                 animator.SetTrigger(Die1);
-            
-            scoreCanvasGroup.DOFade(0f, 0.4f);
-            
-            AnimateScore(Score, 0, 0.4f);
-            
-            ColorCircleGo.SetActive(false);
-            
+
+            // Счёт гаснет, уезжает в 0, круг под ногами выключается.
+            PlayDefeatScore(0.4f);
+
             DOVirtual.DelayedCall(deathAnimDuration, () =>
             {
                 if (this == null) return;
