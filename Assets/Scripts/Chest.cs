@@ -80,7 +80,7 @@ public class Chest : EntityBase
         if (_opened)
             return;
         _opened = true;
-
+        
         // Больше не реагируем на триггер.
         if (bodyCollider != null)
             bodyCollider.enabled = false;
@@ -110,6 +110,9 @@ public class Chest : EntityBase
         
             if (openEffect2 != null)
                 openEffect2.Play(openEffectClip);
+            
+            // Звук открытия сундука.
+            AudioManager.Instance?.PlayChestOpen();
             
             chestClose.SetActive(false);
             chestOpen.SetActive(true);

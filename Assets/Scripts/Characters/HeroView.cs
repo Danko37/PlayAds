@@ -5,7 +5,7 @@ using UnityEngine.AI;
 
 namespace Characters
 {
-    public class HeroView : EntityBase, IAttackAnimationReceiver
+    public class HeroView : EntityBase, IAttackAnimationReceiver, IFootstepAnimationReceiver
     {
         private static readonly int IsRun = Animator.StringToHash("isRun");
         private static readonly int Die1 = Animator.StringToHash("die");
@@ -97,6 +97,7 @@ namespace Characters
         {
             _isRunning = run;
             animator.SetBool(IsRun, run);
+            // Звук шага теперь одиночный — по animation event'ам (см. OnFootstep).
         }
 
         public void SetDie()
@@ -133,7 +134,10 @@ namespace Characters
         {
             if (_attackTarget == null)
                 return;
-            
+
+            // Звук удара меча (победа); смерть гоблина озвучит EnemyView.Die.
+            AudioManager.Instance?.PlaySwordHit();
+
             AnimateScore(Score, Score + _attackTarget.Score, 0.4f);
             _attackTarget.Die();
             _attackTarget = null;
@@ -151,6 +155,9 @@ namespace Characters
             // Счёт героя гаснет, уезжает в 0, круг под ногами выключается (зеркально смерти врага).
             PlayDefeatScore(0.4f);
 
+            // Звук смерти персонажа (поражение); удар врага озвучит EnemyView.OnAttackHit.
+            AudioManager.Instance?.PlayHeroDeath();
+
             SetDie();
             events.RaiseHeroLose();
         }
@@ -166,6 +173,9 @@ namespace Characters
                 return;
 
             _hasSword = true;
+
+            // Звук апгрейда персонажа / получения меча.
+            AudioManager.Instance?.PlaySwordUpgrade();
 
             EffectPrefab.gameObject.SetActive(true);
 
@@ -230,6 +240,15 @@ namespace Characters
             {
                 events.OnCollideEventRaise(data);
             }
+        }
+
+        /// <summary>
+        /// Вызывается animation event'ом на каждый шаг (через FootstepAnimationRelay) —
+        /// одиночный звук шага.
+        /// </summary>
+        public void OnFootstep()
+        {
+            AudioManager.Instance?.PlayFootstep();
         }
     }
 }

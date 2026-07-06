@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
 using Characters;
@@ -31,6 +32,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float dotSpacing = 50f;
     [SerializeField] private float dotFadeDistance = 0.6f;
+    [Tooltip("Зазор в конце пути, где точки не ставятся — чтобы не накладывались на круг.")]
+    [SerializeField] private float dotEndClearance = 0.6f;
     [Tooltip("Базовая (максимальная) прозрачность точек маршрута.")]
     [SerializeField, Range(0f, 1f)] private float maxDotAlpha = 0.5f;
     [SerializeField] private HeroView heroView;
@@ -283,6 +286,14 @@ public class GameManager : MonoBehaviour
         if (currentPath.Count < 2)
             return;
 
+        // Общая длина пути — чтобы не ставить точки вплотную к кругу в конце.
+        float totalLen = 0f;
+        for (int i = 0; i < currentPath.Count - 1; i++)
+            totalLen += Vector3.Distance(currentPath[i], currentPath[i + 1]);
+
+        // Дальше этой отметки точки не ставим — оставляем зазор под маркер конца пути.
+        float lastDotAt = totalLen - dotEndClearance;
+
         // Раскладываем точки равномерно вдоль ВСЕЙ ломаной пути (общий шаг dotSpacing),
         // а не посегментно с рестартом в каждой вершине — иначе на коротких сегментах
         // точки соседних углов накладываются друг на друга.
@@ -300,8 +311,8 @@ public class GameManager : MonoBehaviour
 
             var direction = (end - start) / segLen;
 
-            // Все отметки шага, попавшие в этот сегмент.
-            while (nextAt <= traveled + segLen)
+            // Все отметки шага, попавшие в этот сегмент (и не ближе зазора к концу).
+            while (nextAt <= traveled + segLen && nextAt <= lastDotAt)
             {
                 var position = start + direction * (nextAt - traveled);
 
@@ -411,6 +422,11 @@ public class GameManager : MonoBehaviour
 
         if (UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
         {
+            // Звук тапа во время игры (не зависит от попадания в навмеш).
+            // Не дублируем на UI — там свой звук (UiButtonSound).
+            if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject())
+                AudioManager.Instance?.PlayGameClick();
+
             HandleClick();
         }
     }

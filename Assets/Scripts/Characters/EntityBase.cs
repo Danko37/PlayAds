@@ -76,6 +76,10 @@ namespace Characters
 
             DOTween.To(() => current, v =>
                 {
+                    // Тик на каждое изменившееся очко (перетекание счёта в бою/сундуке).
+                    if (v != current)
+                        AudioManager.Instance?.PlayScoreTick();
+
                     current = v;
                     SetScore(v);
                 }, to, time)

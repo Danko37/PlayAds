@@ -19,6 +19,8 @@ namespace Characters
         [SerializeField] private float rotationOffset = 135f;
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
         [SerializeField] private float fallbackHitDelay = 0.5f;
+        [Tooltip("Враг с оружием (меч) — влияет на звук удара по герою. Снять для безоружного.")]
+        [SerializeField] private bool isArmed = true;
 
         private HeroView _attackTarget;
 
@@ -71,6 +73,9 @@ namespace Characters
             if (_attackTarget == null)
                 return;
 
+            // Звук удара врага (меч или кулак — в зависимости от вооружённости).
+            AudioManager.Instance?.PlayEnemyAttack(isArmed);
+
             // Очки героя перетекают врагу (зеркально победе героя): у врага счётчик растёт.
             AnimateScore(Score, Score + _attackTarget.Score, 0.4f);
 
@@ -94,6 +99,9 @@ namespace Characters
             // (у моделей без death-клипа его нет — просто пропускаем без варнингов).
             if (animator != null && HasParameter(animator, Die1))
                 animator.SetTrigger(Die1);
+
+            // Звук смерти гоблина.
+            AudioManager.Instance?.PlayEnemyDeath();
 
             // Счёт гаснет, уезжает в 0, круг под ногами выключается.
             PlayDefeatScore(0.4f);

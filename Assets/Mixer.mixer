@@ -14,6 +14,39 @@ AudioMixerEffectController:
   m_SendTarget: {fileID: 0}
   m_EnableWetMix: 0
   m_Bypass: 0
+--- !u!243 &-2319231644397828475
+AudioMixerGroupController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Ambient
+  m_AudioMixer: {fileID: 24100000}
+  m_GroupID: 2bb8f2afef33d0841bbb7736dc4610fc
+  m_Children: []
+  m_Volume: 022c1b668bbd6d745ace8608739bf63c
+  m_Pitch: 5e78ca13d7142634c8d4539a0dd49e7e
+  m_Send: 00000000000000000000000000000000
+  m_Effects:
+  - {fileID: -1034715967458728465}
+  m_UserColorIndex: 0
+  m_Mute: 0
+  m_Solo: 0
+  m_BypassEffects: 0
+--- !u!244 &-1034715967458728465
+AudioMixerEffectController:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_EffectID: ff823a0622ccf274aa918962b3e76031
+  m_EffectName: Attenuation
+  m_MixLevel: b264a6d4f6948c740af9ddc943fa3f33
+  m_Parameters: []
+  m_SendTarget: {fileID: 0}
+  m_EnableWetMix: 0
+  m_Bypass: 0
 --- !u!241 &24100000
 AudioMixerController:
   m_ObjectHideFlags: 0
@@ -36,6 +69,7 @@ AudioMixerController:
     - 2d6db5d605cc2204fb62d0d6d91b9280
     - 36e2dde9994031c4e9f71359ad367949
     - 80816ef9c8fb45d4e81c050b59628b5b
+    - 2bb8f2afef33d0841bbb7736dc4610fc
     name: View
   m_CurrentViewIndex: 0
   m_TargetSnapshot: {fileID: 24500006}
@@ -52,6 +86,7 @@ AudioMixerGroupController:
   - {fileID: 3121637806996616539}
   - {fileID: 5155244525012282713}
   - {fileID: 4744471921963245522}
+  - {fileID: -2319231644397828475}
   m_Volume: 9ad4817fd0ca2804eac97698d78a9296
   m_Pitch: eb3b4eebde516704fb824be18ded63cc
   m_Send: 00000000000000000000000000000000
@@ -84,7 +119,9 @@ AudioMixerSnapshotController:
   m_Name: Snapshot
   m_AudioMixer: {fileID: 24100000}
   m_SnapshotID: 279982878610c914095499177363069a
-  m_FloatValues: {}
+  m_FloatValues:
+    80dd6f344100c4e4484d6e6cfd9820d6: -10.474858
+    022c1b668bbd6d745ace8608739bf63c: -3.1841147
   m_TransitionOverrides: {}
 --- !u!244 &1851523171055184426
 AudioMixerEffectController:
