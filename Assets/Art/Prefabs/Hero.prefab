@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 2213041994252522318}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.235}
+  m_LocalPosition: {x: 0, y: 0.502, z: -0.235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -560,6 +560,7 @@ GameObject:
   - component: {fileID: 5348429168683369116}
   - component: {fileID: 4421555171702456778}
   - component: {fileID: 1538562236622340902}
+  - component: {fileID: 287853238304476054}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -635,6 +636,18 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 1
+--- !u!225 &287853238304476054
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5062977010322045898}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &5420755007579041990
 GameObject:
   m_ObjectHideFlags: 0
@@ -867,11 +880,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeroView
   entityType: 0
+  Score: 5
   ScoreBackImage: {fileID: 83113187378305610}
   ScoreBackColor: {r: 0, g: 0.15686275, b: 0.94509804, a: 1}
   ScoreText: {fileID: 2292770648268775872}
   animator: {fileID: 8920212917955158730}
-  Score: 5
+  ColorCircleGo: {fileID: 3801335600353564490}
+  scoreCanvasGroup: {fileID: 287853238304476054}
+  pulseTarget: {fileID: 2975655796288046124}
+  pulseScale: 1.3
+  pulseTime: 0.2
   _fallbackHitDelay: 0.5
   events: {fileID: 11400000, guid: 96189053bb337c647a7543f68ae7e85e, type: 2}
   _heroVisualTransform: {fileID: 3011037982169448734}
@@ -880,7 +898,7 @@ MonoBehaviour:
   heroWithSwordModel: {fileID: 7213767751188827153}
   swordAnimator: {fileID: 8704675155570760974}
   shrinkFactor: 0.8
-  shrinkDuration: 0.15
+  shrinkDuration: 0.2
   growDuration: 0.25
   EffectPrefab: {fileID: 2789793246206965963}
   swordTarget: {fileID: 4308288741352550137}

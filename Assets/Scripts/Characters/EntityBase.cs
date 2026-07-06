@@ -14,6 +14,8 @@ namespace Characters
 
     public class EntityBase : InteractBase
     {
+        public int Score;
+        
         [SerializeField]
         protected Image ScoreBackImage;
         
@@ -33,7 +35,13 @@ namespace Characters
         [SerializeField]
         protected CanvasGroup scoreCanvasGroup;
 
-        public int Score;
+        [Header("Пульс при клике")]
+        [Tooltip("Что масштабировать при клике (модель). Пусто — весь объект.")]
+        [SerializeField] protected Transform pulseTarget;
+        [SerializeField] protected float pulseScale = 1.3f;
+        [SerializeField] protected float pulseTime = 0.2f;
+
+        private bool _pulsing;
 
         private void Start()
         {
@@ -90,6 +98,29 @@ namespace Characters
 
             if (ColorCircleGo != null)
                 ColorCircleGo.SetActive(false);
+        }
+
+        /// <summary>
+        /// Короткий «пульс» скейлом при клике по сущности — обратная связь, что кликнули
+        /// по интерактиву. Масштабируется pulseTarget (модель), либо весь объект.
+        /// </summary>
+        public void PulseClick()
+        {
+            if (_pulsing)
+                return;
+
+            var t = pulseTarget != null ? pulseTarget : transform;
+            _pulsing = true;
+
+            Vector3 baseScale = t.localScale;
+            t.DOScale(baseScale * pulseScale, pulseTime * 0.5f)
+                .SetLoops(2, LoopType.Yoyo)
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() =>
+                {
+                    t.localScale = baseScale;
+                    _pulsing = false;
+                });
         }
     }
 }

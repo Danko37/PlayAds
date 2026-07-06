@@ -23,6 +23,10 @@ public class GameManager : MonoBehaviour
     
     [Header("Settings")]
     [SerializeField] private GameObject pointPrefab;
+    [Tooltip("Префаб круга в конце пути (маркер точки назначения).")]
+    [SerializeField] private GameObject destinationMarkerPrefab;
+    [Tooltip("Слои интерактивных сущностей (враг/сундук) для детекции клика.")]
+    [SerializeField] private LayerMask interactableMask;
     
     [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float dotSpacing = 50f;
@@ -38,6 +42,8 @@ public class GameManager : MonoBehaviour
 
     private readonly List<Vector3> currentPath = new();
     private readonly List<PathDot> activeDots = new();
+
+    private GameObject destinationMarker;
 
     private NavMeshPath navPath;
     
@@ -263,6 +269,13 @@ public class GameManager : MonoBehaviour
         }
 
         activeDots.Clear();
+
+        // Круг конца пути живёт вместе с точками маршрута.
+        if (destinationMarker != null)
+        {
+            Destroy(destinationMarker);
+            destinationMarker = null;
+        }
     }
     
     private void BuildDots()
@@ -312,6 +325,14 @@ public class GameManager : MonoBehaviour
 
             traveled += segLen;
         }
+
+        // Круг в конце пути (точка, куда придёт герой). Плашка лежит на земле — поворот 90° по X.
+        if (destinationMarkerPrefab != null)
+            destinationMarker = Instantiate(
+                destinationMarkerPrefab,
+                currentPath[currentPath.Count - 1],
+                Quaternion.Euler(90f, 0f, 0f),
+                pathPointsParent);
     }
     
     private void UpdateDots(Vector3 target)
@@ -359,15 +380,29 @@ public class GameManager : MonoBehaviour
         // Создаем луч из камеры
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(mousePosition.x, mousePosition.y, 0));
         RaycastHit hit;
-        
-        if (Physics.Raycast(ray, out hit, 100f, 1 << 3))
+
+        // Клик по интерактивной сущности (враг/сундук) — пульс объекта.
+        // Отдельный луч: сущности не на слое NavMesh, а их коллайдеры — триггеры.
+        Characters.EntityBase clickedEntity = null;
+        if (Physics.Raycast(ray, out var entityHit, 100f, interactableMask, QueryTriggerInteraction.Collide))
         {
-            NavMeshHit navHit;
-            if (NavMesh.SamplePosition(hit.point, out navHit, 2f, NavMesh.AllAreas))
-            {
-                MoveToPoint(navHit.position);
-            }
+            clickedEntity = entityHit.collider.GetComponentInParent<Characters.EntityBase>();
+            if (clickedEntity != null)
+                clickedEntity.PulseClick();
         }
+
+        // Цель движения: по земле (навмешу). Если по земле не попали, но кликнули по
+        // интерактиву — бежим к позиции самого объекта (как будто кликнули туда).
+        Vector3 destination;
+        if (Physics.Raycast(ray, out hit, 100f, 1 << 3))
+            destination = hit.point;
+        else if (clickedEntity != null)
+            destination = clickedEntity.transform.position;
+        else
+            return;
+
+        if (NavMesh.SamplePosition(destination, out var navHit, 2f, NavMesh.AllAreas))
+            MoveToPoint(navHit.position);
     }
     private void Update()
     {
