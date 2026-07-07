@@ -18,6 +18,15 @@ namespace Characters
         void OnFootstep();
     }
 
+    /// <summary>
+    /// Реализуется героем: метод дёргается animation event'ом в КОНЦЕ анимации поднятия
+    /// меча (через EquipAnimationRelay) — по нему возвращается управление игроку.
+    /// </summary>
+    public interface IEquipAnimationReceiver : IAnimationReceiver
+    {
+        void OnEquipFinished();
+    }
+
     public interface IAnimationReceiver
     {
         

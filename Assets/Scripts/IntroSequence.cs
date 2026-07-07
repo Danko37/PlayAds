@@ -4,6 +4,7 @@ using Characters;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.InputSystem;
 
 public class IntroSequence : MonoBehaviour
 {
@@ -34,23 +35,56 @@ public class IntroSequence : MonoBehaviour
     [SerializeField] private GameObject pointPrefab;
     [SerializeField] private Transform pathPointsParent;
     [SerializeField] private float dotSpacing = 0.9f;
+    [Tooltip("Зазор в конце пути, где точки не ставятся — чтобы не лезли под круг.")]
+    [SerializeField] private float dotEndClearance = 0.6f;
     [SerializeField, Range(0f, 1f)] private float dotAlpha = 0.5f;
     [Tooltip("За сколько секунд круг проезжает весь маршрут герой→враг→сундук.")]
     [SerializeField] private float circleTravelDuration = 3f;
 
+    [Header("Круг-подсказка на сундуке")]
+    [Tooltip("Во что упирается скейл при пульсации (доля от оригинала).")]
+    [SerializeField, Range(0.1f, 1f)] private float circlePulseScale = 0.8f;
+    [Tooltip("Длительность одной фазы пульса (в сторону и обратно).")]
+    [SerializeField] private float circlePulseDuration = 0.3f;
+    [Tooltip("Пауза между циклами пульса.")]
+    [SerializeField] private float circlePulsePause = 0.5f;
+    [Tooltip("До какого размера круг разрастается при исчезновении (доля от оригинала).")]
+    [SerializeField] private float circleDismissScale = 1.3f;
+    [SerializeField] private float circleDismissDuration = 0.3f;
+
     private readonly List<PathDot> _dots = new();
     private Canvas _canvas;
 
+    private CanvasGroup _circleGroup;
+    private Vector3 _circleBaseScale;
+    private Sequence _pulseSeq;
+    private bool _awaitingChestClick;
+    // Мировой объект, над которым «висит» круг-подсказка — держим над ним каждый кадр,
+    // т.к. в фазе врага камера едет за героем. null — круг не привязан (фазу A ведёт корутина).
+    private Transform _circleTarget;
+
+    // Переиспользуемые буферы, чтобы не аллоцировать каждый кадр при перестройке пути.
+    private readonly List<Vector3> _circlePath = new();
+    private readonly List<Vector3> _samples = new();
+    private NavMeshPath _navPath;
+
     private void OnEnable()
     {
-        if (events != null)
-            events.OnChestOpenStart += HideCircle;
+        if (events == null)
+            return;
+
+        // Дошли до сундука — круг перескакивает на врага; начался бой — круг исчезает.
+        events.OnChestOpenStart += ShowEnemyHint;
+        events.OnBattleStart += DismissCircle;
     }
 
     private void OnDisable()
     {
-        if (events != null)
-            events.OnChestOpenStart -= HideCircle;
+        if (events == null)
+            return;
+
+        events.OnChestOpenStart -= ShowEnemyHint;
+        events.OnBattleStart -= DismissCircle;
     }
 
     private void Start()
@@ -58,16 +92,51 @@ public class IntroSequence : MonoBehaviour
         if (tutorialCircle != null)
         {
             _canvas = tutorialCircle.GetComponentInParent<Canvas>();
+            _circleBaseScale = tutorialCircle.localScale;
+
+            // CanvasGroup нужен для фейда при исчезновении; blocksRaycasts = false,
+            // чтобы клик по кругу проходил в геймплей (герой уходит к сундуку),
+            // а сам клик по кругу мы ловим вручную в Update.
+            _circleGroup = tutorialCircle.GetComponent<CanvasGroup>();
+            if (_circleGroup == null)
+            {
+                _circleGroup = tutorialCircle.gameObject.AddComponent<CanvasGroup>();  
+            }
+            
+            _circleGroup.blocksRaycasts = false;
+
             tutorialCircle.gameObject.SetActive(false);
         }
 
         StartCoroutine(Run());
     }
 
+    private void Update()
+    {
+        if (tutorialCircle == null || !tutorialCircle.gameObject.activeSelf)
+            return;
+
+        // Круг-подсказка держится над своим мировым объектом (камера следует за героем).
+        if (_circleTarget != null)
+            PositionCircle(_circleTarget.position);
+
+        // Фаза сундука: ждём клик именно по кругу — тогда круг исчезает.
+        if (!_awaitingChestClick)
+            return;
+
+        var mouse = Mouse.current;
+        if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            return;
+
+        var mp = mouse.position.ReadValue();
+        if (RectTransformUtility.RectangleContainsScreenPoint(tutorialCircle, mp, CanvasCamera()))
+            DismissCircle();
+    }
+
     private IEnumerator Run()
     {
         // Стартовая (игровая) позиция героя — куда он прибежит и вокруг чего встанет камера.
-        Vector3 heroStart = heroView.transform.position;
+        var heroStart = heroView.transform.position;
 
         yield return Cutscene(heroStart);
         yield return Tutorial(heroStart);
@@ -90,7 +159,7 @@ public class IntroSequence : MonoBehaviour
         sceneCamera.transform.position = cameraStartPoint.position;
         heroView.transform.position = heroSpawnPoint.position;
 
-        Vector3 cameraEnd = heroStart + cameraFollowOffset;
+        var cameraEnd = heroStart + cameraFollowOffset;
         sceneCamera.transform
             .DOMove(cameraEnd, cameraPanDuration)
             .SetEase(Ease.OutSine);
@@ -106,7 +175,7 @@ public class IntroSequence : MonoBehaviour
 
         // Дожидаемся, пока завершатся оба движения (пан камеры и вбегание героя):
         // остаток пана = D*(1-f), вбегание = R.
-        float remainingPan = cameraPanDuration * (1f - heroRunStartFraction);
+        var remainingPan = cameraPanDuration * (1f - heroRunStartFraction);
         yield return new WaitForSeconds(Mathf.Max(remainingPan, heroRunDuration));
 
         heroView.SetRun(false);
@@ -117,59 +186,180 @@ public class IntroSequence : MonoBehaviour
             cameraScript.enabled = true;
     }
 
-    // --- Туториал: круг по маршруту + точки навмеша ---
+    // --- Туториал: круг едет герой→сундук, точки — живой путь герой→круг ---
     private IEnumerator Tutorial(Vector3 heroStart)
     {
-        var path = BuildTutorialPath(heroStart);
-        if (path.Count < 2)
+        // Маршрут, по которому движется сам круг (герой→сундук).
+        var route = BuildTutorialPath(heroStart);
+        if (route.Count < 2)
             yield break;
 
-        float total = PathLength(path);
+        var total = PathLength(route);
         if (total < 0.0001f)
             yield break;
+
+        var heroNav = SampleOnNavMesh(heroStart);
 
         if (tutorialCircle != null)
             tutorialCircle.gameObject.SetActive(true);
 
-        float nextDotAt = dotSpacing;
-        float t = 0f;
-
+        var t = 0f;
         while (t < circleTravelDuration)
         {
             t += Time.deltaTime;
-            float s = Mathf.Clamp01(t / circleTravelDuration) * total;
+            var s = Mathf.Clamp01(t / circleTravelDuration) * total;
+            var circlePos = PointAtDistance(route, s);
 
-            PositionCircle(PointAtDistance(path, s));
+            PositionCircle(circlePos);
 
-            // Точки навмеша выкладываются от героя до текущей позиции круга.
-            while (nextDotAt <= s)
-            {
-                SpawnDot(PointAtDistance(path, nextDotAt));
-                nextDotAt += dotSpacing;
-            }
+            // Точки — кратчайший путь по навмешу от героя до ТЕКУЩЕГО положения круга.
+            // Каждый кадр пересчитываем и перестраиваем (точки репозиционируются, не мерцают).
+            ComputeNavPath(heroNav, circlePos, _circlePath);
+            RebuildDots(_circlePath);
 
             yield return null;
         }
 
-        // Круг точно на сундуке; точки-подсказки убираем.
-        PositionCircle(path[path.Count - 1]);
+        // Круг доехал; точки-подсказки убираем и оставляем круг пульсировать над сундуком.
         ClearDots();
+        ShowCircleOver(chest, awaitClick: true);
     }
 
     /// <summary>
-    /// Маршрут герой→враг→сундук по навмешу: две CalculatePath, склеенные в одну ломаную.
-    /// Точки-цели снимаются на навмеш (SamplePosition), т.к. объекты стоят над землёй.
+    /// Кратчайший путь по навмешу from→to в переиспользуемый список (fallback — прямой отрезок).
+    /// </summary>
+    private void ComputeNavPath(Vector3 from, Vector3 to, List<Vector3> outList)
+    {
+        outList.Clear();
+        _navPath ??= new NavMeshPath();
+
+        if (NavMesh.CalculatePath(from, to, NavMesh.AllAreas, _navPath) && _navPath.corners.Length >= 2)
+            outList.AddRange(_navPath.corners);
+        else
+        {
+            outList.Add(from);
+            outList.Add(to);
+        }
+    }
+
+    /// <summary>
+    /// Раскладывает точки равномерно вдоль пути (шаг dotSpacing, зазор в конце под круг),
+    /// переиспользуя уже существующие точки: лишние удаляет, недостающие создаёт. Так путь
+    /// плавно перестраивается за кругом без пере-инстанцирования и мерцания.
+    /// </summary>
+    private void RebuildDots(List<Vector3> path)
+    {
+        _samples.Clear();
+
+        var total = PathLength(path);
+        var limit = total - dotEndClearance;
+        for (var d = dotSpacing; d <= limit; d += dotSpacing)
+            _samples.Add(PointAtDistance(path, d));
+
+        for (var i = 0; i < _samples.Count; i++)
+        {
+            if (i < _dots.Count)
+                _dots[i].transform.position = _samples[i];
+            else
+                CreateDot(_samples[i]);
+        }
+
+        for (var i = _dots.Count - 1; i >= _samples.Count; i--)
+        {
+            if (_dots[i] != null)
+                Destroy(_dots[i].gameObject);
+            _dots.RemoveAt(i);
+        }
+    }
+
+    /// <summary>
+    /// Показывает круг-подсказку над мировым объектом target и запускает пульсацию. Круг
+    /// держится над объектом каждый кадр (Update), т.к. камера следует за героем.
+    /// awaitClick=true — круг исчезнет по клику по нему (фаза сундука); false — по внешнему
+    /// событию (фаза врага: исчезает при начале боя, OnBattleStart).
+    /// </summary>
+    private void ShowCircleOver(Transform target, bool awaitClick)
+    {
+        if (tutorialCircle == null || target == null)
+            return;
+
+        // Снимаем твины прошлой фазы (в т.ч. незавершённое исчезновение) и восстанавливаем вид.
+        tutorialCircle.DOKill();
+        if (_circleGroup != null)
+        {
+            _circleGroup.DOKill();
+            _circleGroup.alpha = 1f;
+        }
+
+        tutorialCircle.localScale = _circleBaseScale;
+        tutorialCircle.gameObject.SetActive(true);
+
+        _circleTarget = target;
+        _awaitingChestClick = awaitClick;
+
+        PositionCircle(target.position);
+        BeginPulse();
+    }
+
+    // Пульс скейлом: оригинал ⇄ circlePulseScale с паузой, зациклено.
+    private void BeginPulse()
+    {
+        _pulseSeq?.Kill();
+        _pulseSeq = DOTween.Sequence()
+            .Append(tutorialCircle.DOScale(_circleBaseScale * circlePulseScale, circlePulseDuration).SetEase(Ease.InOutSine))
+            .Append(tutorialCircle.DOScale(_circleBaseScale, circlePulseDuration).SetEase(Ease.InOutSine))
+            .AppendInterval(circlePulsePause)
+            .SetLoops(-1);
+    }
+
+    // Дошли до сундука — та же подсказка перескакивает на врага (исчезнет при начале боя).
+    private void ShowEnemyHint() => ShowCircleOver(enemy, awaitClick: false);
+
+    /// <summary>
+    /// Круг исчезает: гаснет по альфе (CanvasGroup) и одновременно разрастается до
+    /// circleDismissScale. Клик по сундуку (Update) и начало боя (OnBattleStart) ведут сюда.
+    /// </summary>
+    private void DismissCircle()
+    {
+        if (tutorialCircle == null || !tutorialCircle.gameObject.activeSelf)
+            return;
+
+        _awaitingChestClick = false;
+        _circleTarget = null;
+        _pulseSeq?.Kill();
+        _pulseSeq = null;
+
+        var seq = DOTween.Sequence();
+        seq.Append(tutorialCircle.DOScale(_circleBaseScale * circleDismissScale, circleDismissDuration).SetEase(Ease.OutQuad));
+        if (_circleGroup != null)
+            seq.Join(_circleGroup.DOFade(0f, circleDismissDuration));
+        seq.OnComplete(() =>
+        {
+            if (tutorialCircle != null)
+                tutorialCircle.gameObject.SetActive(false);
+        });
+    }
+
+    // Камера канваса: null для Overlay, worldCamera для Screen Space - Camera.
+    private Camera CanvasCamera()
+    {
+        return (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            ? _canvas.worldCamera
+            : null;
+    }
+
+    /// <summary>
+    /// Маршрут герой→сундук по навмешу. Точки-цели снимаются на навмеш (SamplePosition),
+    /// т.к. объекты стоят над землёй.
     /// </summary>
     private List<Vector3> BuildTutorialPath(Vector3 heroStart)
     {
         var result = new List<Vector3>();
 
-        Vector3 a = SampleOnNavMesh(heroStart);
-        Vector3 b = SampleOnNavMesh(enemy.position);
-        Vector3 c = SampleOnNavMesh(chest.position);
+        var a = SampleOnNavMesh(heroStart);
+        var c = SampleOnNavMesh(chest.position);
 
-        AppendSegment(a, b, result, includeStart: true);
-        AppendSegment(b, c, result, includeStart: false);
+        AppendSegment(a, c, result, includeStart: true);
 
         return result;
     }
@@ -186,7 +376,7 @@ public class IntroSequence : MonoBehaviour
         }
 
         var corners = np.corners;
-        for (int i = includeStart ? 0 : 1; i < corners.Length; i++)
+        for (var i = includeStart ? 0 : 1; i < corners.Length; i++)
             outList.Add(corners[i]);
     }
 
@@ -195,7 +385,7 @@ public class IntroSequence : MonoBehaviour
         return NavMesh.SamplePosition(p, out var hit, 3f, NavMesh.AllAreas) ? hit.position : p;
     }
 
-    private void SpawnDot(Vector3 worldPos)
+    private void CreateDot(Vector3 worldPos)
     {
         if (pointPrefab == null)
             return;
@@ -227,7 +417,7 @@ public class IntroSequence : MonoBehaviour
         if (tutorialCircle == null)
             return;
 
-        Vector3 screen = sceneCamera.WorldToScreenPoint(worldPos);
+        var screen = sceneCamera.WorldToScreenPoint(worldPos);
 
         var parent = tutorialCircle.parent as RectTransform;
         if (parent == null)
@@ -236,25 +426,14 @@ public class IntroSequence : MonoBehaviour
             return;
         }
 
-        // Для Screen Space - Overlay камера канваса = null, для Camera — её камера.
-        Camera canvasCam = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            ? _canvas.worldCamera
-            : null;
-
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, canvasCam, out var local))
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, CanvasCamera(), out var local))
             tutorialCircle.anchoredPosition = local;
-    }
-
-    private void HideCircle()
-    {
-        if (tutorialCircle != null)
-            tutorialCircle.gameObject.SetActive(false);
     }
 
     private static float PathLength(List<Vector3> path)
     {
-        float len = 0f;
-        for (int i = 0; i < path.Count - 1; i++)
+        var len = 0f;
+        for (var i = 0; i < path.Count - 1; i++)
             len += Vector3.Distance(path[i], path[i + 1]);
         return len;
     }
@@ -267,16 +446,16 @@ public class IntroSequence : MonoBehaviour
         if (distance <= 0f)
             return path[0];
 
-        float traveled = 0f;
-        for (int i = 0; i < path.Count - 1; i++)
+        var traveled = 0f;
+        for (var i = 0; i < path.Count - 1; i++)
         {
-            float segLen = Vector3.Distance(path[i], path[i + 1]);
+            var segLen = Vector3.Distance(path[i], path[i + 1]);
             if (segLen < 0.0001f)
                 continue;
 
             if (traveled + segLen >= distance)
             {
-                float f = (distance - traveled) / segLen;
+                var f = (distance - traveled) / segLen;
                 return Vector3.Lerp(path[i], path[i + 1], f);
             }
 

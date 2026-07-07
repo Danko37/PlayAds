@@ -5,7 +5,7 @@ using UnityEngine.AI;
 
 namespace Characters
 {
-    public class HeroView : EntityBase, IAttackAnimationReceiver, IFootstepAnimationReceiver
+    public class HeroView : EntityBase, IAttackAnimationReceiver, IFootstepAnimationReceiver, IEquipAnimationReceiver
     {
         private static readonly int IsRun = Animator.StringToHash("isRun");
         private static readonly int Die1 = Animator.StringToHash("die");
@@ -56,6 +56,7 @@ namespace Characters
 
         private bool _hasSword;
         private bool _isRunning;
+        private bool _chestOpenedRaised;
         private EnemyView _attackTarget;
 
         public EventsSO Events => events;
@@ -245,6 +246,20 @@ namespace Characters
                         .DOScale(swordTargetScale, growDuration)
                         .SetEase(Ease.OutBack);
                 });
+        }
+
+        /// <summary>
+        /// Вызывается animation event'ом в КОНЦЕ анимации поднятия меча (через
+        /// EquipAnimationRelay). Только теперь возвращаем управление игроку. Guard от
+        /// повторного вызова — на случай зацикленного/дважды навешенного события.
+        /// </summary>
+        public void OnEquipFinished()
+        {
+            if (_chestOpenedRaised)
+                return;
+
+            _chestOpenedRaised = true;
+            events.RaiseChestOpened();
         }
 
         private static bool HasParameter(Animator animator, int paramHash)

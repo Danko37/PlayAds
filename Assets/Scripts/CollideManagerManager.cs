@@ -56,8 +56,9 @@ public class CollideManagerManager : MonoBehaviour
             hero.AnimateScore(hero.Score, hero.Score + chest.Score, scoreAnimationTime);
             //chest.Score = 0;
 
+            // Меняем модель и запускаем анимацию поднятия меча. Управление вернётся НЕ сейчас,
+            // а в конце этой анимации — по animation event'у (HeroView.OnEquipFinished).
             hero.EquipSword();
-            eventsSo.RaiseChestOpened();
         });
     }
 
