@@ -5,6 +5,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class IntroSequence : MonoBehaviour
 {
@@ -55,7 +56,7 @@ public class IntroSequence : MonoBehaviour
     private readonly List<PathDot> _dots = new();
     private Canvas _canvas;
 
-    private CanvasGroup _circleGroup;
+    private Image _circleImage;
     private Vector3 _circleBaseScale;
     private Sequence _pulseSeq;
     private bool _awaitingChestClick;
@@ -94,16 +95,12 @@ public class IntroSequence : MonoBehaviour
             _canvas = tutorialCircle.GetComponentInParent<Canvas>();
             _circleBaseScale = tutorialCircle.localScale;
 
-            // CanvasGroup нужен для фейда при исчезновении; blocksRaycasts = false,
-            // чтобы клик по кругу проходил в геймплей (герой уходит к сундуку),
-            // а сам клик по кругу мы ловим вручную в Update.
-            _circleGroup = tutorialCircle.GetComponent<CanvasGroup>();
-            if (_circleGroup == null)
-            {
-                _circleGroup = tutorialCircle.gameObject.AddComponent<CanvasGroup>();  
-            }
-            
-            _circleGroup.blocksRaycasts = false;
+            // Фейд при исчезновении делаем через альфу Image.color. raycastTarget = false —
+            // чтобы клик по кругу проходил в геймплей (герой уходит к сундуку), а сам клик
+            // по кругу мы ловим вручную в Update.
+            _circleImage = tutorialCircle.GetComponent<Image>();
+            if (_circleImage != null)
+                _circleImage.raycastTarget = false;
 
             tutorialCircle.gameObject.SetActive(false);
         }
@@ -285,10 +282,10 @@ public class IntroSequence : MonoBehaviour
 
         // Снимаем твины прошлой фазы (в т.ч. незавершённое исчезновение) и восстанавливаем вид.
         tutorialCircle.DOKill();
-        if (_circleGroup != null)
+        if (_circleImage != null)
         {
-            _circleGroup.DOKill();
-            _circleGroup.alpha = 1f;
+            _circleImage.DOKill();
+            SetCircleAlpha(1f);
         }
 
         tutorialCircle.localScale = _circleBaseScale;
@@ -316,7 +313,7 @@ public class IntroSequence : MonoBehaviour
     private void ShowEnemyHint() => ShowCircleOver(enemy, awaitClick: false);
 
     /// <summary>
-    /// Круг исчезает: гаснет по альфе (CanvasGroup) и одновременно разрастается до
+    /// Круг исчезает: гаснет по альфе (Image.color) и одновременно разрастается до
     /// circleDismissScale. Клик по сундуку (Update) и начало боя (OnBattleStart) ведут сюда.
     /// </summary>
     private void DismissCircle()
@@ -331,13 +328,21 @@ public class IntroSequence : MonoBehaviour
 
         var seq = DOTween.Sequence();
         seq.Append(tutorialCircle.DOScale(_circleBaseScale * circleDismissScale, circleDismissDuration).SetEase(Ease.OutQuad));
-        if (_circleGroup != null)
-            seq.Join(_circleGroup.DOFade(0f, circleDismissDuration));
+        if (_circleImage != null)
+            seq.Join(_circleImage.DOFade(0f, circleDismissDuration));
         seq.OnComplete(() =>
         {
             if (tutorialCircle != null)
                 tutorialCircle.gameObject.SetActive(false);
         });
+    }
+
+    // Ставит альфу круга через альфа-канал Image.color.
+    private void SetCircleAlpha(float alpha)
+    {
+        var c = _circleImage.color;
+        c.a = alpha;
+        _circleImage.color = c;
     }
 
     // Камера канваса: null для Overlay, worldCamera для Screen Space - Camera.
