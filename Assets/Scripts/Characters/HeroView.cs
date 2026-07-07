@@ -1,5 +1,5 @@
-using System;
 using DG.Tweening;
+using SpriteAnimation;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -140,10 +140,14 @@ namespace Characters
 
             AnimateScore(Score, Score + _attackTarget.Score, 0.4f);
             _attackTarget.Die();
+            
+            if (_attackTarget.IsFinalEnemy)
+            {
+                // Итог боя для игровой логики / UI.
+                events.RaiseHeroWin(); 
+            }
+            
             _attackTarget = null;
-
-            // Итог боя для игровой логики / UI.
-            events.RaiseHeroWin();
         }
 
         /// <summary>

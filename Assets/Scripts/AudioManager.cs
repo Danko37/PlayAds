@@ -1,11 +1,6 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
-/// <summary>
-/// Простой синглтон-менеджер звука. Клипы накидываются в инспекторе.
-/// Источники создаются в рантайме: музыка/эмбиент — зациклены, SFX/UI — PlayOneShot.
-/// Вызовы делаются из нужных мест как AudioManager.Instance?.PlayX().
-/// </summary>
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
@@ -17,15 +12,18 @@ public class AudioManager : MonoBehaviour
     [Header("Музыка / фон")]
     [SerializeField] private AudioClip backgroundMusic;
     [SerializeField] private AudioClip seaAmbient;
+    
     [Tooltip("Автоматически запускать музыку и эмбиент при старте.")]
     [SerializeField] private bool playMusicOnStart = true;
 
     [Header("Геймплей")]
     [Tooltip("Тап/клик во время игры (не зависит от попадания в навмеш).")]
     [SerializeField] private AudioClip gameClick;
+    
     [Tooltip("Одиночный звук шага (проигрывается по animation event'ам).")]
     [SerializeField] private AudioClip footstep;
     [SerializeField] private AudioClip chestOpen;
+    
     [Tooltip("Апгрейд персонажа / получение меча.")]
     [SerializeField] private AudioClip swordUpgrade;
     [SerializeField] private AudioClip manYes;
@@ -33,20 +31,26 @@ public class AudioManager : MonoBehaviour
     [Header("Бой")]
     [Tooltip("Удар меча героя (победа).")]
     [SerializeField] private AudioClip swordHit;
+    
     [Tooltip("Смерть гоблина (победа).")]
     [SerializeField] private AudioClip enemyDeath;
+    
     [Tooltip("Удар врага С оружием (поражение).")]
     [SerializeField] private AudioClip enemyAttackArmed;
+    
     [Tooltip("Удар врага БЕЗ оружия — кулак (поражение).")]
     [SerializeField] private AudioClip enemyAttackUnarmed;
+    
     [Tooltip("Смерть персонажа (поражение).")]
     [SerializeField] private AudioClip heroDeath;
 
     [Header("UI")]
     [Tooltip("Клик по любому UI-элементу.")]
     [SerializeField] private AudioClip uiClick;
+    
     [Tooltip("Окно победы (конец уровня).")]
     [SerializeField] private AudioClip winUi;
+    
     [Tooltip("Окно поражения.")]
     [SerializeField] private AudioClip loseUi;
 

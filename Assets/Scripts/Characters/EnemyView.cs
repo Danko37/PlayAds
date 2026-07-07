@@ -15,12 +15,19 @@ namespace Characters
         [Header("Атака по герою")]
         [Tooltip("Трансформ модели врага, которую поворачиваем к герою.")]
         [SerializeField] private Transform visualTransform;
+        
         [Tooltip("Изометрический сдвиг поворота (как -135 у героя). Подстрой под модель.")]
         [SerializeField] private float rotationOffset = 135f;
+        
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
         [SerializeField] private float fallbackHitDelay = 0.5f;
+        
         [Tooltip("Враг с оружием (меч) — влияет на звук удара по герою. Снять для безоружного.")]
         [SerializeField] private bool isArmed = true;
+        
+        [SerializeField]
+        private bool isFinalEnemy;
+        public bool IsFinalEnemy => isFinalEnemy;
 
         private HeroView _attackTarget;
 

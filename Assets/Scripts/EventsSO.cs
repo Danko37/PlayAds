@@ -26,6 +26,9 @@ public class EventsSO : ScriptableObject
     public event Action OnChestOpenStart;
     public event Action OnChestOpened;
 
+    // Рестарт игры (кнопка в окне итога -> GameManager перезагружает сцену).
+    public event Action OnRestart;
+
     public void OnCollideEventRaise(CollideData data)
     {
         OnCollideEvent?.Invoke(data);
@@ -40,4 +43,6 @@ public class EventsSO : ScriptableObject
 
     public void RaiseChestOpenStart() => OnChestOpenStart?.Invoke();
     public void RaiseChestOpened() => OnChestOpened?.Invoke();
+
+    public void RaiseRestart() => OnRestart?.Invoke();
 }

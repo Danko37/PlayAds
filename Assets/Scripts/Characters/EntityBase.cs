@@ -38,6 +38,7 @@ namespace Characters
         [Header("Пульс при клике")]
         [Tooltip("Что масштабировать при клике (модель). Пусто — весь объект.")]
         [SerializeField] protected Transform pulseTarget;
+        
         [SerializeField] protected float pulseScale = 1.3f;
         [SerializeField] protected float pulseTime = 0.2f;
 

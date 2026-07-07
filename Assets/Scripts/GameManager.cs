@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 using Characters;
@@ -19,27 +20,42 @@ public enum PlayerState
 public class GameManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Camera mainCamera;
-    [SerializeField] private Transform pathPointsParent;
+    [SerializeField] 
+    private Camera mainCamera;
+    [SerializeField] 
+    private Transform pathPointsParent;
+    
+    [SerializeField]
+    private EventsSO events;
     
     [Header("Settings")]
-    [SerializeField] private GameObject pointPrefab;
+    [SerializeField] private 
+        GameObject pointPrefab;
     [Tooltip("Префаб круга в конце пути (маркер точки назначения).")]
-    [SerializeField] private GameObject destinationMarkerPrefab;
+    [SerializeField] private 
+        GameObject destinationMarkerPrefab;
     [Tooltip("Слои интерактивных сущностей (враг/сундук) для детекции клика.")]
-    [SerializeField] private LayerMask interactableMask;
+    [SerializeField] private 
+        LayerMask interactableMask;
     
-    [SerializeField] private float moveSpeed = 8f;
-    [SerializeField] private float dotSpacing = 50f;
-    [SerializeField] private float dotFadeDistance = 0.6f;
+    [SerializeField] 
+    private float moveSpeed = 8f;
+    [SerializeField] 
+    private float dotSpacing = 50f;
+    [SerializeField] 
+    private float dotFadeDistance = 0.6f;
     [Tooltip("Зазор в конце пути, где точки не ставятся — чтобы не накладывались на круг.")]
-    [SerializeField] private float dotEndClearance = 0.6f;
+    [SerializeField] 
+    private float dotEndClearance = 0.6f;
     [Tooltip("Базовая (максимальная) прозрачность точек маршрута.")]
-    [SerializeField, Range(0f, 1f)] private float maxDotAlpha = 0.5f;
-    [SerializeField] private HeroView heroView;
+    [SerializeField, Range(0f, 1f)] 
+    private float maxDotAlpha = 0.5f;
+    [SerializeField] 
+    private HeroView heroView;
 
     [Tooltip("Длительность анимации удара героя (сек) до возврата в Idle.")]
-    [SerializeField] private float attackDuration = 1.1f;
+    [SerializeField] private float 
+        attackDuration = 1.1f;
 
     private Coroutine moveCoroutine;
 
@@ -60,26 +76,39 @@ public class GameManager : MonoBehaviour
 
     private void OnEnable()
     {
-        if (heroView == null || heroView.Events == null)
+        if (events == null)
             return;
 
-        heroView.Events.OnBattleStart += HandleBattleStart;
-        heroView.Events.OnBattleWin += HandleBattleWin;
-        heroView.Events.OnBattleLose += HandleBattleLose;
-        heroView.Events.OnChestOpenStart += HandleChestOpenStart;
-        heroView.Events.OnChestOpened += HandleChestOpened;
+        events.OnBattleStart += HandleBattleStart;
+        events.OnBattleWin += HandleBattleWin;
+        events.OnBattleLose += HandleBattleLose;
+        events.OnChestOpenStart += HandleChestOpenStart;
+        events.OnChestOpened += HandleChestOpened;
+        events.OnRestart += HandleRestart;
     }
 
     private void OnDisable()
     {
-        if (heroView == null || heroView.Events == null)
+        if (events == null)
             return;
 
-        heroView.Events.OnBattleStart -= HandleBattleStart;
-        heroView.Events.OnBattleWin -= HandleBattleWin;
-        heroView.Events.OnBattleLose -= HandleBattleLose;
-        heroView.Events.OnChestOpenStart -= HandleChestOpenStart;
-        heroView.Events.OnChestOpened -= HandleChestOpened;
+        events.OnBattleStart -= HandleBattleStart;
+        events.OnBattleWin -= HandleBattleWin;
+        events.OnBattleLose -= HandleBattleLose;
+        events.OnChestOpenStart -= HandleChestOpenStart;
+        events.OnChestOpened -= HandleChestOpened;
+        events.OnRestart -= HandleRestart;
+    }
+
+    /// <summary>
+    /// Рестарт: возвращает всё в исходное состояние перезагрузкой активной сцены.
+    /// KillAll обязателен — иначе активные твины (DOTween.useSafeMode = false) в кадре
+    /// выгрузки обратятся к уничтоженным объектам и кинут NullReferenceException.
+    /// </summary>
+    private void HandleRestart()
+    {
+        DOTween.KillAll();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     private void HandleBattleStart()
@@ -381,7 +410,11 @@ public class GameManager : MonoBehaviour
         // и победы (Win) ввод остаётся заблокированным.
         if (PlayerState != PlayerState.Idle && PlayerState != PlayerState.Moving)
             return;
-        
+
+        // Клик по UI (окно итога, кнопка рестарта) не должен уводить героя бежать «под окном».
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+
         if (UnityEngine.InputSystem.Mouse.current == null)
             return;
             
