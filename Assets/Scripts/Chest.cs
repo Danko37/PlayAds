@@ -96,6 +96,12 @@ public class Chest : EntityBase
             scoreCanvasGroup.DOFade(0f, 0.4f);
         });
         seq.AppendInterval(0.1f);
+
+        seq.AppendCallback(() =>
+        {
+            // Звук открытия сундука.
+            AudioManager.Instance?.PlayChestOpen();
+        });
         // 1) Сундук уменьшается до минимума.
         seq.Append(chestRoot.DOScale(rootScale * shrinkFactor, scaleHalfDuration).SetEase(Ease.InQuad));
 
@@ -110,9 +116,6 @@ public class Chest : EntityBase
         
             if (openEffect2 != null)
                 openEffect2.Play(openEffectClip);
-            
-            // Звук открытия сундука.
-            AudioManager.Instance?.PlayChestOpen();
             
             chestClose.SetActive(false);
             chestOpen.SetActive(true);

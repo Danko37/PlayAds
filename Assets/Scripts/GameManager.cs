@@ -111,7 +111,7 @@ public class GameManager : MonoBehaviour
         Vector3 dir = enemy.transform.position - heroView.transform.position;
         dir.y = 0;
         CharacterRotate(dir);
-
+        yield return null;
         // 2) Анимация удара. Враг умирает от animation event'а в середине удара
         //    (event дёргает HeroView.OnAttackHit -> enemy.Die()).
         heroView.PlayAttack(enemy);

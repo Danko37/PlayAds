@@ -182,6 +182,10 @@ namespace Characters
             var swordlessScale = heroWithoutSwordModel.transform.localScale;
             var swordTargetScale = heroWithSwordModel.transform.localScale;
 
+            DOVirtual.DelayedCall(0.8f, () =>
+            {
+                AudioManager.Instance?.PlayManYes();
+            });
             // 1) текущая модель уменьшается, затем скрывается.
             heroWithoutSwordModel.transform
                 .DOScale(swordlessScale * shrinkFactor, shrinkDuration)
