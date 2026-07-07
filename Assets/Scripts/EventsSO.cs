@@ -29,6 +29,9 @@ public class EventsSO : ScriptableObject
     // Рестарт игры (кнопка в окне итога -> GameManager перезагружает сцену).
     public event Action OnRestart;
 
+    // Интро (катсцена + туториал) завершено -> GameManager возвращает управление.
+    public event Action OnIntroFinished;
+
     public void OnCollideEventRaise(CollideData data)
     {
         OnCollideEvent?.Invoke(data);
@@ -45,4 +48,6 @@ public class EventsSO : ScriptableObject
     public void RaiseChestOpened() => OnChestOpened?.Invoke();
 
     public void RaiseRestart() => OnRestart?.Invoke();
+
+    public void RaiseIntroFinished() => OnIntroFinished?.Invoke();
 }

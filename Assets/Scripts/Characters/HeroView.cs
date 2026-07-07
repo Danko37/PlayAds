@@ -100,6 +100,31 @@ namespace Characters
             // Звук шага теперь одиночный — по animation event'ам (см. OnFootstep).
         }
 
+        /// <summary>
+        /// Поворачивает визуал героя в сторону мирового направления (изометрическая
+        /// математика: магический сдвиг −135°). Та же логика, что в GameManager.CharacterRotate
+        /// и EnemyView.FaceInstant — вынесена сюда для переиспользования (напр. вбегание в интро).
+        /// </summary>
+        public void FaceDirection(Vector3 worldDir)
+        {
+            worldDir.y = 0;
+            if (worldDir.sqrMagnitude < 0.0001f)
+                return;
+
+            var y = Quaternion.FromToRotation(Vector3.forward, worldDir.normalized).eulerAngles.y;
+            var res = y - 135f;
+
+            _heroVisualTransform.localRotation = res < 0
+                ? Quaternion.Euler(0, 360 - Mathf.Abs(res), 0)
+                : Quaternion.Euler(0, res, 0);
+        }
+
+        /// <summary>Возврат визуала в стартовый разворот (как при обычной остановке).</summary>
+        public void ResetFacing()
+        {
+            _heroVisualTransform.localRotation = Quaternion.Euler(0, InitialYRotation, 0);
+        }
+
         public void SetDie()
         {
             animator.SetTrigger(Die1);

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
@@ -10,6 +9,7 @@ using DG.Tweening;
 
 public enum PlayerState
 {
+    Intro,
     Idle,
     Moving,
     Fighting,
@@ -66,7 +66,9 @@ public class GameManager : MonoBehaviour
 
     private NavMeshPath navPath;
     
-    public PlayerState PlayerState { get; private set; } = PlayerState.Idle;
+    // Игра стартует в Intro: ввод заблокирован с первого кадра, пока IntroSequence
+    // (катсцена + туториал) не поднимет OnIntroFinished.
+    public PlayerState PlayerState { get; private set; } = PlayerState.Intro;
 
 
     private void Awake()
@@ -85,6 +87,7 @@ public class GameManager : MonoBehaviour
         events.OnChestOpenStart += HandleChestOpenStart;
         events.OnChestOpened += HandleChestOpened;
         events.OnRestart += HandleRestart;
+        events.OnIntroFinished += HandleIntroFinished;
     }
 
     private void OnDisable()
@@ -98,6 +101,15 @@ public class GameManager : MonoBehaviour
         events.OnChestOpenStart -= HandleChestOpenStart;
         events.OnChestOpened -= HandleChestOpened;
         events.OnRestart -= HandleRestart;
+        events.OnIntroFinished -= HandleIntroFinished;
+    }
+
+    /// <summary>
+    /// Интро (катсцена + туториал) завершено — возвращаем управление игроку.
+    /// </summary>
+    private void HandleIntroFinished()
+    {
+        PlayerState = PlayerState.Idle;
     }
 
     /// <summary>
@@ -148,7 +160,7 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(attackDuration);
 
         // 3) После удара герой возвращается в InitRotation и в Idle (как при обычной остановке).
-        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+        heroView.ResetFacing();
         PlayerState = PlayerState.Idle;
     }
 
@@ -167,7 +179,7 @@ public class GameManager : MonoBehaviour
         ClearDots();
 
         // Герой встаёт в initial поворот и idle (как при обычной остановке).
-        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+        heroView.ResetFacing();
 
         // Враг мгновенно поворачивается к герою и бьёт; смерть героя — на strike-евенте
         // (relay -> EnemyView.OnAttackHit -> HeroView.OnKilled -> SetDie + RaiseHeroLose).
@@ -192,7 +204,7 @@ public class GameManager : MonoBehaviour
         PlayerState = PlayerState.Fighting;
 
         // Встаём в initial поворот (как при обычной остановке).
-        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+        heroView.ResetFacing();
     }
 
     private void HandleChestOpened()
@@ -271,7 +283,7 @@ public class GameManager : MonoBehaviour
 
         moveCoroutine = null;
         
-        heroView.HeroVisualTransform.localRotation = Quaternion.Euler(0, heroView.InitialYRotation, 0);
+        heroView.ResetFacing();
         heroView.SetRun(false);
         PlayerState = PlayerState.Idle;
     }
@@ -282,13 +294,8 @@ public class GameManager : MonoBehaviour
     /// <param name="dir"></param>
     private void CharacterRotate(Vector3 dir)
     {
-        //направление по оси Y
-        var worldDir = Quaternion.FromToRotation(Vector3.forward, dir.normalized).eulerAngles.y;
-        
-        //135 - разница между мировым поворотом и локальным поворотом персонажа в изометрии (магия)
-        var res = worldDir - 135;
-        
-        heroView.HeroVisualTransform.localRotation = res < 0 ? Quaternion.Euler(0, 360 - Math.Abs(res), 0) : Quaternion.Euler(0, res, 0);
+        // Изометрический поворот вынесен в HeroView.FaceDirection (переиспользуется в интро).
+        heroView.FaceDirection(dir);
     }
 
 
@@ -450,6 +457,11 @@ public class GameManager : MonoBehaviour
     }
     private void Update()
     {
+        // Ввод активен только когда игрок реально управляет героем. Во время интро,
+        // боя, смерти и победы клик не звучит и не обрабатывается.
+        if (PlayerState != PlayerState.Idle && PlayerState != PlayerState.Moving)
+            return;
+
         if (UnityEngine.InputSystem.Mouse.current == null)
             return;
 
