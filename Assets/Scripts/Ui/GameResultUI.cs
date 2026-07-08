@@ -14,6 +14,7 @@ namespace Ui
         [SerializeField] private UnityEvent onClickEvent;
         
         private Sequence _sequence = null;
+        private Tween _btnScaleTween =  null;
         
         private void OnEnable()
         {
@@ -28,12 +29,19 @@ namespace Ui
                 .Insert(0f,titleTransform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack))
                 .Insert(0.2f,imageTransform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack))
                 .Insert(0.4f,buttonTransform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack));
+            _sequence.onComplete += () =>
+            {
+                _btnScaleTween = buttonTransform.DOScale(Vector3.one * 1.3f, 1f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+            };
         }
 
         private void OnDisable()
         {
             _sequence?.Kill();
             _sequence = null; 
+            
+            _btnScaleTween?.Kill();
+            _btnScaleTween = null;
         }
 
         public void OnClick()
