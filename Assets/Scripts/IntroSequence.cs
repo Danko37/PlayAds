@@ -125,11 +125,11 @@ public class IntroSequence : MonoBehaviour
         if (!_awaitingChestClick)
             return;
 
-        var mouse = Mouse.current;
-        if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+        var pointer = Pointer.current;
+        if (pointer == null || !pointer.press.wasPressedThisFrame)
             return;
 
-        var mp = mouse.position.ReadValue();
+        var mp = pointer.position.ReadValue();
         if (RectTransformUtility.RectangleContainsScreenPoint(tutorialCircle, mp, CanvasCamera()))
             DismissCircle();
     }

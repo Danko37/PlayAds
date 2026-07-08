@@ -409,11 +409,11 @@ public class GameManager : MonoBehaviour
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
-        if (UnityEngine.InputSystem.Mouse.current == null)
+        if (UnityEngine.InputSystem.Pointer.current == null)
             return;
             
-        // Получаем позицию мыши
-        Vector2 mousePosition = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+        // Позиция указателя (мышь на ПК / палец на тач-устройстве).
+        Vector2 mousePosition = UnityEngine.InputSystem.Pointer.current.position.ReadValue();
         
         // Создаем луч из камеры
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(mousePosition.x, mousePosition.y, 0));
@@ -449,10 +449,10 @@ public class GameManager : MonoBehaviour
         if (PlayerState != PlayerState.Idle && PlayerState != PlayerState.Moving)
             return;
 
-        if (UnityEngine.InputSystem.Mouse.current == null)
+        if (UnityEngine.InputSystem.Pointer.current == null)
             return;
 
-        if (UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
+        if (UnityEngine.InputSystem.Pointer.current.press.wasPressedThisFrame)
         {
             // Звук тапа во время игры (не зависит от попадания в навмеш).
             // Не дублируем на UI — там свой звук (UiButtonSound).
