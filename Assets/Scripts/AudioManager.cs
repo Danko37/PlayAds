@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -15,6 +16,9 @@ public class AudioManager : MonoBehaviour
     
     [Tooltip("Автоматически запускать музыку и эмбиент при старте.")]
     [SerializeField] private bool playMusicOnStart = true;
+
+    [Tooltip("За сколько секунд гаснет фоновая музыка перед музыкой победы/поражения.")]
+    [SerializeField] private float musicFadeOutDuration = 0.2f;
 
     [Header("Геймплей")]
     [Tooltip("Тап/клик во время игры (не зависит от попадания в навмеш).")]
@@ -62,6 +66,8 @@ public class AudioManager : MonoBehaviour
     private AudioSource _ambientSource;
     private AudioSource _sfxSource;
     private AudioSource _uiSource;
+
+    private Tween _musicFadeTween;
 
     private void Awake()
     {
@@ -140,8 +146,34 @@ public class AudioManager : MonoBehaviour
 
     // UI-звуки идут в отдельный источник (группа UI микшера).
     public void PlayUiClick() => PlayUi(uiClick);
-    public void PlayWinUi() => PlayUi(winUi);
-    public void PlayLoseUi() => PlayUi(loseUi);
+
+    // Победа/поражение: сначала гасим фоновую музыку, затем играем UI-музыку итога.
+    public void PlayWinUi() => PlayUiAfterMusicFade(winUi);
+    public void PlayLoseUi() => PlayUiAfterMusicFade(loseUi);
+
+    /// <summary>
+    /// Плавно гасит фоновую музыку до 0 за musicFadeOutDuration и только потом играет
+    /// музыку итога (победа/поражение). Если музыка не играет — сразу играет итог.
+    /// </summary>
+    private void PlayUiAfterMusicFade(AudioClip clip)
+    {
+        if (clip == null) return;
+
+        if (!_musicSource.isPlaying)
+        {
+            PlayUi(clip);
+            return;
+        }
+
+        _musicFadeTween?.Kill();
+        _musicFadeTween = DOTween
+            .To(() => _musicSource.volume, v => _musicSource.volume = v, 0f, musicFadeOutDuration)
+            .OnComplete(() =>
+            {
+                _musicSource.Stop();
+                PlayUi(clip);
+            });
+    }
 
     private void PlaySfx(AudioClip clip)
     {

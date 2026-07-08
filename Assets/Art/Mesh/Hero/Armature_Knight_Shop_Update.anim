@@ -70413,7 +70413,7 @@ AnimationClip:
   m_HasGenericRootTransform: 0
   m_HasMotionFloatCurves: 0
   m_Events:
-  - time: 4.6666665
+  - time: 2.0333333
     functionName: OnEquipFinished
     data: 
     objectReferenceParameter: {fileID: 0}
