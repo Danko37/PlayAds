@@ -64,6 +64,8 @@ public class GameManager : MonoBehaviour
 
     private GameObject destinationMarker;
 
+    private PathDotPool dotPool;
+
     private NavMeshPath navPath;
     
     // Игра стартует в Intro: ввод заблокирован с первого кадра, пока IntroSequence
@@ -74,6 +76,7 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         DOTween.useSafeMode = false;
+        dotPool = new PathDotPool(pointPrefab, pathPointsParent);
     }
 
     private void OnEnable()
@@ -302,10 +305,7 @@ public class GameManager : MonoBehaviour
     private void ClearDots()
     {
         foreach (var dot in activeDots)
-        {
-            if (dot != null)
-                Destroy(dot.gameObject);
-        }
+            dotPool.Release(dot);
 
         activeDots.Clear();
 
@@ -352,20 +352,7 @@ public class GameManager : MonoBehaviour
             {
                 var position = start + direction * (nextAt - traveled);
 
-                var obj = Instantiate(
-                    pointPrefab,
-                    position,
-                    Quaternion.identity,
-                    pathPointsParent);
-
-                var dot = obj.GetComponent<PathDot>();
-
-                dot.transform.rotation = Quaternion.Euler(dot.InitRotation);
-
-                activeDots.Add(dot);
-
-                dot.Show(0);
-                dot.SetAlpha(maxDotAlpha);
+                activeDots.Add(dotPool.Get(position, maxDotAlpha));
 
                 nextAt += dotSpacing;
             }
@@ -401,10 +388,10 @@ public class GameManager : MonoBehaviour
             if (d < dotFadeDistance)
                 dot.SetAlpha((d / dotFadeDistance) * maxDotAlpha);
 
-            // Точка пройдена: она близко и уже позади направления движения — удаляем.
+            // Точка пройдена: она близко и уже позади направления движения — в пул.
             if (d < dotFadeDistance && Vector3.Dot(delta, moveDir) < 0f)
             {
-                Destroy(dot.gameObject);
+                dotPool.Release(dot);
                 activeDots.RemoveAt(i);
             }
         }

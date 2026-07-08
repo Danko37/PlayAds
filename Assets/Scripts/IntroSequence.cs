@@ -54,6 +54,7 @@ public class IntroSequence : MonoBehaviour
     [SerializeField] private float circleDismissDuration = 0.3f;
 
     private readonly List<PathDot> _dots = new();
+    private PathDotPool _dotPool;
     private Canvas _canvas;
 
     private Image _circleImage;
@@ -104,6 +105,9 @@ public class IntroSequence : MonoBehaviour
 
             tutorialCircle.gameObject.SetActive(false);
         }
+
+        if (pointPrefab != null)
+            _dotPool = new PathDotPool(pointPrefab, pathPointsParent);
 
         StartCoroutine(Run());
     }
@@ -263,8 +267,7 @@ public class IntroSequence : MonoBehaviour
 
         for (var i = _dots.Count - 1; i >= _samples.Count; i--)
         {
-            if (_dots[i] != null)
-                Destroy(_dots[i].gameObject);
+            _dotPool.Release(_dots[i]);
             _dots.RemoveAt(i);
         }
     }
@@ -392,26 +395,16 @@ public class IntroSequence : MonoBehaviour
 
     private void CreateDot(Vector3 worldPos)
     {
-        if (pointPrefab == null)
+        if (_dotPool == null)
             return;
 
-        var obj = Instantiate(pointPrefab, worldPos, Quaternion.identity, pathPointsParent);
-        var dot = obj.GetComponent<PathDot>();
-
-        dot.transform.rotation = Quaternion.Euler(dot.InitRotation);
-        dot.Show(0);
-        dot.SetAlpha(dotAlpha);
-
-        _dots.Add(dot);
+        _dots.Add(_dotPool.Get(worldPos, dotAlpha));
     }
 
     private void ClearDots()
     {
         foreach (var dot in _dots)
-        {
-            if (dot != null)
-                Destroy(dot.gameObject);
-        }
+            _dotPool.Release(dot);
 
         _dots.Clear();
     }

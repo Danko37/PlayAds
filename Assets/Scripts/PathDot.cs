@@ -15,12 +15,21 @@ public class PathDot : MonoBehaviour
 
     public void Show(float delay)
     {
+        // Гасим предыдущий твин — важно при переиспользовании точки из пула.
+        _tween?.Kill();
         transform.localScale = Vector3.zero;
 
         _tween = transform
             .DOScale(shownScale, 0.25f)
             .SetDelay(delay)
             .SetEase(Ease.OutBack);
+    }
+
+    /// <summary>Сброс перед возвратом в пул: гасим твин появления.</summary>
+    public void ResetForPool()
+    {
+        _tween?.Kill();
+        _tween = null;
     }
 
     public void SetAlpha(float alpha)
