@@ -8,7 +8,7 @@ namespace Ui
     /// Показывает нужную панель по событиям EventsSO и озвучивает её.
     /// Кнопка Restart на панелях вызывает Restart() через Button.onClick.
     /// </summary>
-    public class EndGameUI : MonoBehaviour
+    public class UIManager : MonoBehaviour
     {
         [SerializeField]
         private EventsSO events;

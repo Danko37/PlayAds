@@ -79,10 +79,6 @@ public class CollideManagerManager : MonoBehaviour
 
         if (heroWon)
         {
-            var scoreAnimationTime = 0.4f;
-
-            int from = hero.Score;
-            
             //enemy.AnimateScore(enemy.Score, 0, scoreAnimationTime);
             // Герой поворачивается к врагу и бьёт. Смерть врага срабатывает
             // от animation event'а удара (HeroView.OnAttackHit -> enemy.Die()).

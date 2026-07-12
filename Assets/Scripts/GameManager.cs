@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using System.Collections;
@@ -66,8 +65,10 @@ public class GameManager : MonoBehaviour
 
     private PathDotPool dotPool;
 
-    private NavMeshPath navPath;
-    
+    [Tooltip("Граф проходимых точек — источник маршрута (замена NavMesh).")]
+    [SerializeField]
+    private WalkableGraph graph;
+
     // Игра стартует в Intro: ввод заблокирован с первого кадра, пока IntroSequence
     // (катсцена + туториал) не поднимет OnIntroFinished.
     public PlayerState PlayerState { get; private set; } = PlayerState.Intro;
@@ -219,26 +220,30 @@ public class GameManager : MonoBehaviour
     private void MoveToPoint(Vector3 target)
     {
         if (moveCoroutine != null)
+        {
             StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
 
         ClearDots();
 
-        navPath ??= new NavMeshPath();
-        
-        heroView.NavMeshAgent.enabled = true;
-
-        if (!heroView.NavMeshAgent.CalculatePath(target, navPath))
-            return;
-
-        if (navPath.status != NavMeshPathStatus.PathComplete)
-            return;
-
+        // Путь строим по графу проходимых точек (замена NavMesh — Luna его не поддерживает).
         currentPath.Clear();
-        currentPath.AddRange(navPath.corners);
+        if (!graph.FindPath(heroView.transform.position, target, currentPath) || currentPath.Count < 2)
+        {
+            // Путь не построен (клик в отрезанную/недостижимую зону — напр. эрозия отступа
+            // разорвала связность). Нельзя оставлять героя в подвисшем Moving с вечной
+            // анимацией бега: аккуратно гасим бег и возвращаемся в Idle.
+            heroView.SetRun(false);
+            heroView.ResetFacing();
+            if (PlayerState == PlayerState.Moving)
+            {
+                PlayerState = PlayerState.Idle;
+            }
+            return;
+        }
 
         BuildDots();
-
-        heroView.NavMeshAgent.enabled = false;
 
         moveCoroutine = StartCoroutine(MoveCoroutine());
     }
@@ -407,13 +412,12 @@ public class GameManager : MonoBehaviour
 
         // Клик по UI (окно итога, кнопка рестарта) не должен уводить героя бежать «под окном».
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
             return;
+        }
 
-        if (UnityEngine.InputSystem.Pointer.current == null)
-            return;
-            
         // Позиция указателя (мышь на ПК / палец на тач-устройстве).
-        Vector2 mousePosition = UnityEngine.InputSystem.Pointer.current.position.ReadValue();
+        var mousePosition = PointerInput.GetPosition();
         
         // Создаем луч из камеры
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(mousePosition.x, mousePosition.y, 0));
@@ -439,25 +443,26 @@ public class GameManager : MonoBehaviour
         else
             return;
 
-        if (NavMesh.SamplePosition(destination, out var navHit, 2f, NavMesh.AllAreas))
-            MoveToPoint(navHit.position);
+        // Привязку к проходимой зоне делает сам граф (снап к ближайшему узлу).
+        MoveToPoint(destination);
     }
     private void Update()
     {
         // Ввод активен только когда игрок реально управляет героем. Во время интро,
         // боя, смерти и победы клик не звучит и не обрабатывается.
         if (PlayerState != PlayerState.Idle && PlayerState != PlayerState.Moving)
+        {
             return;
+        }
 
-        if (UnityEngine.InputSystem.Pointer.current == null)
-            return;
-
-        if (UnityEngine.InputSystem.Pointer.current.press.wasPressedThisFrame)
+        if (PointerInput.PressedThisFrame())
         {
             // Звук тапа во время игры (не зависит от попадания в навмеш).
             // Не дублируем на UI — там свой звук (UiButtonSound).
             if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject())
+            {
                 AudioManager.Instance?.PlayGameClick();
+            }
 
             HandleClick();
         }

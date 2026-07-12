@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using Characters;
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class IntroSequence : MonoBehaviour
@@ -17,6 +15,8 @@ public class IntroSequence : MonoBehaviour
     [SerializeField] private Transform enemy;
     [SerializeField] private Transform chest;
     [SerializeField] private EventsSO events;
+    [Tooltip("Граф проходимых точек — источник маршрута туториала (замена NavMesh).")]
+    [SerializeField] private WalkableGraph graph;
 
     [Header("Катсцена")]
     [Tooltip("Стартовое (нижнее) положение камеры — показывает море.")]
@@ -68,7 +68,6 @@ public class IntroSequence : MonoBehaviour
     // Переиспользуемые буферы, чтобы не аллоцировать каждый кадр при перестройке пути.
     private readonly List<Vector3> _circlePath = new();
     private readonly List<Vector3> _samples = new();
-    private NavMeshPath _navPath;
 
     private void OnEnable()
     {
@@ -119,19 +118,26 @@ public class IntroSequence : MonoBehaviour
 
         // Круг-подсказка держится над своим мировым объектом (камера следует за героем).
         if (_circleTarget != null)
+        {
             PositionCircle(_circleTarget.position);
+        }
 
         // Фаза сундука: ждём клик именно по кругу — тогда круг исчезает.
         if (!_awaitingChestClick)
+        {
             return;
+        }
 
-        var pointer = Pointer.current;
-        if (pointer == null || !pointer.press.wasPressedThisFrame)
+        if (!PointerInput.PressedThisFrame())
+        {
             return;
+        }
 
-        var mp = pointer.position.ReadValue();
+        var mp = PointerInput.GetPosition();
         if (RectTransformUtility.RectangleContainsScreenPoint(tutorialCircle, mp, CanvasCamera()))
+        {
             DismissCircle();
+        }
     }
 
     private IEnumerator Run()
@@ -151,11 +157,9 @@ public class IntroSequence : MonoBehaviour
     {
         // Камерой управляем сами: следящий скрипт мешал бы пану.
         if (cameraScript != null)
+        {
             cameraScript.enabled = false;
-
-        // Агент навмеша не должен «тянуть» героя, пока мы двигаем его трансформ вручную.
-        if (heroView.NavMeshAgent != null)
-            heroView.NavMeshAgent.enabled = false;
+        }
 
         sceneCamera.transform.position = cameraStartPoint.position;
         heroView.transform.position = heroSpawnPoint.position;
@@ -184,7 +188,9 @@ public class IntroSequence : MonoBehaviour
 
         // Камера уже в heroStart+offset — включение следящего скрипта проходит без скачка.
         if (cameraScript != null)
+        {
             cameraScript.enabled = true;
+        }
     }
 
     // --- Туториал: круг едет герой→сундук, точки — живой путь герой→круг ---
@@ -199,10 +205,10 @@ public class IntroSequence : MonoBehaviour
         if (total < 0.0001f)
             yield break;
 
-        var heroNav = SampleOnNavMesh(heroStart);
-
         if (tutorialCircle != null)
+        {
             tutorialCircle.gameObject.SetActive(true);
+        }
 
         var t = 0f;
         while (t < circleTravelDuration)
@@ -213,9 +219,9 @@ public class IntroSequence : MonoBehaviour
 
             PositionCircle(circlePos);
 
-            // Точки — кратчайший путь по навмешу от героя до ТЕКУЩЕГО положения круга.
+            // Точки — кратчайший путь по графу от героя до ТЕКУЩЕГО положения круга.
             // Каждый кадр пересчитываем и перестраиваем (точки репозиционируются, не мерцают).
-            ComputeNavPath(heroNav, circlePos, _circlePath);
+            ComputeNavPath(heroStart, circlePos, _circlePath);
             RebuildDots(_circlePath);
 
             yield return null;
@@ -227,20 +233,19 @@ public class IntroSequence : MonoBehaviour
     }
 
     /// <summary>
-    /// Кратчайший путь по навмешу from→to в переиспользуемый список (fallback — прямой отрезок).
+    /// Кратчайший путь по графу from→to в переиспользуемый список (fallback — прямой отрезок).
     /// </summary>
     private void ComputeNavPath(Vector3 from, Vector3 to, List<Vector3> outList)
     {
-        outList.Clear();
-        _navPath ??= new NavMeshPath();
-
-        if (NavMesh.CalculatePath(from, to, NavMesh.AllAreas, _navPath) && _navPath.corners.Length >= 2)
-            outList.AddRange(_navPath.corners);
-        else
+        if (graph != null && graph.FindPath(from, to, outList))
         {
-            outList.Add(from);
-            outList.Add(to);
+            return;
         }
+
+        // Нет пути по графу — берём прямой отрезок как запасной вариант.
+        outList.Clear();
+        outList.Add(from);
+        outList.Add(to);
     }
 
     /// <summary>
@@ -357,40 +362,21 @@ public class IntroSequence : MonoBehaviour
     }
 
     /// <summary>
-    /// Маршрут герой→сундук по навмешу. Точки-цели снимаются на навмеш (SamplePosition),
-    /// т.к. объекты стоят над землёй.
+    /// Маршрут герой→сундук по графу проходимых точек (fallback — прямой отрезок).
     /// </summary>
     private List<Vector3> BuildTutorialPath(Vector3 heroStart)
     {
         var result = new List<Vector3>();
 
-        var a = SampleOnNavMesh(heroStart);
-        var c = SampleOnNavMesh(chest.position);
-
-        AppendSegment(a, c, result, includeStart: true);
-
-        return result;
-    }
-
-    private static void AppendSegment(Vector3 from, Vector3 to, List<Vector3> outList, bool includeStart)
-    {
-        var np = new NavMeshPath();
-        if (!NavMesh.CalculatePath(from, to, NavMesh.AllAreas, np))
+        if (graph != null && graph.FindPath(heroStart, chest.position, result))
         {
-            // Нет пути по навмешу — берём прямой отрезок как запасной вариант.
-            if (includeStart) outList.Add(from);
-            outList.Add(to);
-            return;
+            return result;
         }
 
-        var corners = np.corners;
-        for (var i = includeStart ? 0 : 1; i < corners.Length; i++)
-            outList.Add(corners[i]);
-    }
-
-    private static Vector3 SampleOnNavMesh(Vector3 p)
-    {
-        return NavMesh.SamplePosition(p, out var hit, 3f, NavMesh.AllAreas) ? hit.position : p;
+        result.Clear();
+        result.Add(heroStart);
+        result.Add(chest.position);
+        return result;
     }
 
     private void CreateDot(Vector3 worldPos)

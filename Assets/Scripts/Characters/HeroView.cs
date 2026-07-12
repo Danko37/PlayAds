@@ -1,7 +1,6 @@
 using DG.Tweening;
 using SpriteAnimation;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Characters
 {
@@ -65,20 +64,9 @@ namespace Characters
 
         public Transform HeroVisualTransform => _heroVisualTransform;
 
-        [SerializeField]
-        private NavMeshAgent _navMeshAgent;
-        public NavMeshAgent NavMeshAgent => _navMeshAgent;
-        
         public float InitialYRotation { get; private set; }
         private void Awake()
         {
-            _navMeshAgent.updateRotation = false;
-            _navMeshAgent.autoBraking = false;
-            _navMeshAgent.speed = 8f;
-            _navMeshAgent.acceleration = 1000f;
-            _navMeshAgent.angularSpeed = 1000f;
-            _navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
-        
             InitialYRotation = _heroVisualTransform.localRotation.eulerAngles.y;
 
             EffectPrefab.onAnimationFinished += EffectHandler;
