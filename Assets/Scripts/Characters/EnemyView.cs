@@ -21,6 +21,13 @@ namespace Characters
         
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
         [SerializeField] private float fallbackHitDelay = 0.5f;
+
+        [Tooltip("У модели есть анимация атаки с animation event'ом. Если выключено — удар по " +
+                 "герою наносится по таймеру (fallbackHitDelay). Luna не читает Animator.parameters.")]
+        [SerializeField] private bool hasAttackAnimation = true;
+
+        [Tooltip("У модели есть анимация смерти (триггер 'die'). Если выключено — смерть без анимации.")]
+        [SerializeField] private bool hasDeathAnimation = true;
         
         [Tooltip("Враг с оружием (меч) — влияет на звук удара по герою. Снять для безоружного.")]
         [SerializeField] private bool isArmed = true;
@@ -59,7 +66,7 @@ namespace Characters
         {
             _attackTarget = hero;
 
-            if (animator != null && HasParameter(animator, Attack1))
+            if (animator != null && hasAttackAnimation)
             {
                 // Есть анимация удара -> смерть героя дёрнет animation event (OnAttackHit).
                 animator.SetTrigger(Attack1);
@@ -102,10 +109,12 @@ namespace Characters
             if (bodyCollider != null)
                 bodyCollider.enabled = false;
 
-            // Триггерим анимацию смерти только если параметр есть в контроллере
-            // (у моделей без death-клипа его нет — просто пропускаем без варнингов).
-            if (animator != null && HasParameter(animator, Die1))
+            // Триггерим анимацию смерти только если она есть у модели
+            // (у моделей без death-клипа флаг снят — просто пропускаем).
+            if (animator != null && hasDeathAnimation)
+            {
                 animator.SetTrigger(Die1);
+            }
 
             // Звук смерти гоблина.
             AudioManager.Instance?.PlayEnemyDeath();
@@ -125,20 +134,6 @@ namespace Characters
                             Destroy(gameObject);
                     });
             });
-        }
-
-        private static bool HasParameter(Animator animator, int paramHash)
-        {
-            if (animator.runtimeAnimatorController == null)
-                return false;
-
-            foreach (var p in animator.parameters)
-            {
-                if (p.nameHash == paramHash)
-                    return true;
-            }
-
-            return false;
         }
     }
 }

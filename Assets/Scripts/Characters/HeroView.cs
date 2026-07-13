@@ -12,8 +12,14 @@ namespace Characters
         private static readonly int Update1 = Animator.StringToHash("update");
 
         [Tooltip("Задержка удара, если у модели нет анимации атаки (animation event недоступен).")]
-        [SerializeField] 
+        [SerializeField]
         private float _fallbackHitDelay = 0.5f;
+
+        [Tooltip("У модели есть анимация атаки с animation event'ом. Если выключено — удар " +
+                 "наносится по таймеру (_fallbackHitDelay). Задаётся вручную: Luna не " +
+                 "поддерживает чтение Animator.parameters.")]
+        [SerializeField]
+        private bool hasAttackAnimation = true;
         
         [SerializeField]
         private EventsSO events;
@@ -127,7 +133,7 @@ namespace Characters
         {
             _attackTarget = enemy;
 
-            if (HasParameter(animator, Attack1))
+            if (hasAttackAnimation)
             {
                 // Есть анимация удара -> смерть врага дёрнет animation event (OnAttackHit).
                 animator.SetTrigger(Attack1);
@@ -223,12 +229,12 @@ namespace Characters
                     //подменяем ссылки для вращения персонажа
                     _heroVisualTransform = _heroVisualTransformWithSword;
 
-                    if (HasParameter(animator, IsRun))
-                        animator.SetBool(IsRun, _isRunning);
+                    // Модель с мечом — тот самый run+update контроллер, параметры есть по
+                    // построению; ставим напрямую (Luna не поддерживает Animator.parameters).
+                    animator.SetBool(IsRun, _isRunning);
 
                     // Модель с мечом появилась — дёргаем триггер update её аниматора.
-                    if (HasParameter(animator, Update1))
-                        animator.SetTrigger(Update1);
+                    animator.SetTrigger(Update1);
 
                     heroWithSwordModel.transform
                         .DOScale(swordTargetScale, growDuration)
@@ -248,20 +254,6 @@ namespace Characters
 
             _chestOpenedRaised = true;
             events.RaiseChestOpened();
-        }
-
-        private static bool HasParameter(Animator animator, int paramHash)
-        {
-            if (animator == null || animator.runtimeAnimatorController == null)
-                return false;
-
-            foreach (var p in animator.parameters)
-            {
-                if (p.nameHash == paramHash)
-                    return true;
-            }
-
-            return false;
         }
 
         private void OnTriggerEnter(Collider other)
