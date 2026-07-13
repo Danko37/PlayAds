@@ -88,6 +88,7 @@ public class GameManager : MonoBehaviour
         events.OnBattleStart += HandleBattleStart;
         events.OnBattleWin += HandleBattleWin;
         events.OnBattleLose += HandleBattleLose;
+        events.OnHeroWin += HandleHeroWin;
         events.OnChestOpenStart += HandleChestOpenStart;
         events.OnChestOpened += HandleChestOpened;
         events.OnRestart += HandleRestart;
@@ -102,6 +103,7 @@ public class GameManager : MonoBehaviour
         events.OnBattleStart -= HandleBattleStart;
         events.OnBattleWin -= HandleBattleWin;
         events.OnBattleLose -= HandleBattleLose;
+        events.OnHeroWin -= HandleHeroWin;
         events.OnChestOpenStart -= HandleChestOpenStart;
         events.OnChestOpened -= HandleChestOpened;
         events.OnRestart -= HandleRestart;
@@ -149,6 +151,25 @@ public class GameManager : MonoBehaviour
         StartCoroutine(AttackRoutine(enemy));
     }
 
+    /// <summary>
+    /// Финальная победа героя. UIManager по этому же событию показывает окно итога, а здесь
+    /// блокируем игровой ввод терминальным состоянием Win — иначе клики продолжали бы
+    /// управлять героем «сквозь» окно (HandleClick/Update реагируют только в Idle/Moving).
+    /// </summary>
+    private void HandleHeroWin()
+    {
+        PlayerState = PlayerState.Win;
+        heroView.SetRun(false);
+
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+
+        ClearDots();
+    }
+
     private IEnumerator AttackRoutine(EnemyView enemy)
     {
         // Остаёмся в Fighting: ввод заблокирован, пока герой бьёт.
@@ -165,7 +186,13 @@ public class GameManager : MonoBehaviour
 
         // 3) После удара герой возвращается в InitRotation и в Idle (как при обычной остановке).
         heroView.ResetFacing();
-        PlayerState = PlayerState.Idle;
+
+        // Не перетираем терминальное состояние: при финальной победе OnHeroWin уже выставил
+        // Win (окно итога). Возврат в Idle только если бой действительно завершился обычным.
+        if (PlayerState == PlayerState.Fighting)
+        {
+            PlayerState = PlayerState.Idle;
+        }
     }
 
     private void HandleBattleLose(EnemyView enemy)
