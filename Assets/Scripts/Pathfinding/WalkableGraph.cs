@@ -26,11 +26,6 @@ public class WalkableGraph : MonoBehaviour
     [Tooltip("Зазор от препятствий: клетка отбраковывается, если препятствие ближе.")]
     [SerializeField] private float agentRadius = 0.4f;
 
-    [Tooltip("Отступ пути от края пола (вода/обрыв) И препятствий, в метрах. Узлы и линия " +
-             "видимости держатся на этом расстоянии от непроходимого. 0 = впритык к краю. " +
-             "Если узкие участки пропадают — уменьши (участок должен быть шире ~2×отступа).")]
-    [SerializeField] private float edgeClearance = 0f;
-
     [Header("Поиск пути")]
     [Tooltip("Срезать лишние углы по карте проходимости (чистая математика, безопасно для Luna).")]
     [SerializeField] private bool smoothPath = true;
@@ -322,11 +317,12 @@ public class WalkableGraph : MonoBehaviour
         _originZ = area.min.z;
         _cols = Mathf.FloorToInt(area.size.x / cellSize) + 1;
         _rows = Mathf.FloorToInt(area.size.z / cellSize) + 1;
+        _walkable = new bool[_cols * _rows];
 
-        // 1) Сырая карта проходимости: клетка проходима там, где луч попал в пол и в ней
-        //    нет препятствия. Так карта повторяет форму невыпуклого пола.
-        var raw = new bool[_cols * _rows];
-        var positions = new Vector3[_cols * _rows];
+        var nodes = new List<Vector3>();
+
+        // Заполняем область сеткой; клетка проходима (и рождает узел) там, где луч попал
+        // в пол и рядом нет препятствия. Так узлы и карта повторяют форму невыпуклого пола.
         for (var iz = 0; iz < _rows; iz++)
         {
             for (var ix = 0; ix < _cols; ix++)
@@ -345,28 +341,13 @@ public class WalkableGraph : MonoBehaviour
                     continue;
                 }
 
-                var idx = iz * _cols + ix;
-                raw[idx] = true;
-                positions[idx] = hit.point;
-            }
-        }
-
-        // 2) Отступ от края: «сжимаем» проходимую область на edgeClearance, чтобы узлы и
-        //    линия видимости держались подальше от воды/обрыва и препятствий.
-        _walkable = Erode(raw, edgeClearance);
-
-        // 3) Узлы рождаются только в клетках, переживших эрозию.
-        var nodes = new List<Vector3>();
-        for (var idx = 0; idx < _walkable.Length; idx++)
-        {
-            if (_walkable[idx])
-            {
-                nodes.Add(positions[idx]);
+                _walkable[iz * _cols + ix] = true;
+                nodes.Add(hit.point);
             }
         }
 
         BuildEdges(nodes);
-        Debug.Log($"[WalkableGraph] Запечено узлов: {_nodes.Length}, рёбер (полусумма): {_neighbors.Length / 2}, клеток карты: {_cols}x{_rows}, отступ от края: {edgeClearance}");
+        Debug.Log($"[WalkableGraph] Запечено узлов: {_nodes.Length}, рёбер (полусумма): {_neighbors.Length / 2}, клеток карты: {_cols}x{_rows}");
 
         if (!Application.isPlaying)
         {
@@ -419,58 +400,6 @@ public class WalkableGraph : MonoBehaviour
 
         // Буферы A* пересоздадутся под новый размер при следующем поиске.
         _g = null;
-    }
-
-    /// <summary>
-    /// «Сжимает» карту проходимости на clearance метров: клетка остаётся проходимой,
-    /// только если ВСЕ клетки в радиусе clearance тоже проходимы (за краем сетки =
-    /// непроходимо). Так узлы и путь держатся подальше от края пола и препятствий.
-    /// </summary>
-    private bool[] Erode(bool[] src, float clearance)
-    {
-        if (clearance <= 0f)
-        {
-            return src;
-        }
-
-        // Радиус эрозии в клетках. Округляем ВВЕРХ: любой положительный отступ убирает
-        // минимум один слой клеток. Гранулярность эрозии = cellSize (меньше клетки не отступить).
-        var r = Mathf.CeilToInt(clearance / cellSize);
-        var dst = new bool[src.Length];
-
-        for (var iz = 0; iz < _rows; iz++)
-        {
-            for (var ix = 0; ix < _cols; ix++)
-            {
-                var idx = iz * _cols + ix;
-                if (!src[idx])
-                {
-                    continue;
-                }
-
-                // Клетка выживает, только если ВСЕ клетки в квадрате r×r вокруг тоже проходимы
-                // (за краем сетки = непроходимо). Квадрат (Чебышёв) захватывает и диагонали —
-                // это важно, т.к. пирс расположен по диагонали к осям сетки.
-                var ok = true;
-                for (var dz = -r; dz <= r && ok; dz++)
-                {
-                    for (var dx = -r; dx <= r; dx++)
-                    {
-                        var nx = ix + dx;
-                        var nz = iz + dz;
-                        if (nx < 0 || nx >= _cols || nz < 0 || nz >= _rows || !src[nz * _cols + nx])
-                        {
-                            ok = false;
-                            break;
-                        }
-                    }
-                }
-
-                dst[idx] = ok;
-            }
-        }
-
-        return dst;
     }
 
     // ---------------------------------------------------------------------
