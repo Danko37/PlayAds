@@ -1,14 +1,17 @@
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.Audio;
 
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
-    [Header("Микшер")]
-    [Tooltip("Аудио-микшер проекта. Источники разводятся по группам Music/Ambient/Effects/UI по имени.")]
-    [SerializeField] private AudioMixer mixer;
+    [Header("Громкость каналов (0..1)")]
+    [Tooltip("Громкость задаётся прямо на AudioSource — так её и применяет Luna. " +
+             "Микшер из проекта убран, весь баланс звука настраивается тут.")]
+    [SerializeField, Range(0f, 1f)] private float musicVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float ambientVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float effectsVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float uiVolume = 1f;
 
     [Header("Музыка / фон")]
     [SerializeField] private AudioClip backgroundMusic;
@@ -78,20 +81,10 @@ public class AudioManager : MonoBehaviour
         }
         Instance = this;
 
-        _musicSource = CreateSource("Music", true, GetGroup("Music"));
-        _ambientSource = CreateSource("Ambient", true, GetGroup("Ambient"));
-        _sfxSource = CreateSource("SFX", false, GetGroup("Effects"));
-        _uiSource = CreateSource("UI", false, GetGroup("UI"));
-    }
-
-    // Ищет группу микшера по имени (Music/Ambient/Effects/UI).
-    private AudioMixerGroup GetGroup(string groupName)
-    {
-        if (mixer == null)
-            return null;
-
-        var groups = mixer.FindMatchingGroups(groupName);
-        return groups.Length > 0 ? groups[0] : null;
+        _musicSource = CreateSource("Music", true, musicVolume);
+        _ambientSource = CreateSource("Ambient", true, ambientVolume);
+        _sfxSource = CreateSource("SFX", false, effectsVolume);
+        _uiSource = CreateSource("UI", false, uiVolume);
     }
 
     private void Start()
@@ -103,7 +96,7 @@ public class AudioManager : MonoBehaviour
         PlayAmbient();
     }
 
-    private AudioSource CreateSource(string sourceName, bool loop, AudioMixerGroup group)
+    private AudioSource CreateSource(string sourceName, bool loop, float volume)
     {
         var go = new GameObject(sourceName);
         go.transform.SetParent(transform);
@@ -111,9 +104,7 @@ public class AudioManager : MonoBehaviour
         var src = go.AddComponent<AudioSource>();
         src.loop = loop;
         src.playOnAwake = false;
-        // Громкость целиком регулируется в микшере (группы Music/Ambient/Effects/UI).
-        if (group != null)
-            src.outputAudioMixerGroup = group;
+        src.volume = volume;
 
         return src;
     }
@@ -122,6 +113,7 @@ public class AudioManager : MonoBehaviour
     public void PlayMusic()
     {
         if (backgroundMusic == null) return;
+        _musicSource.volume = musicVolume; // сброс после возможного fade-out (см. PlayUiAfterMusicFade)
         _musicSource.clip = backgroundMusic;
         _musicSource.Play();
     }

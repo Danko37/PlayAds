@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Characters;
 using DG.Tweening;
+using Luna.Unity;
 
 public enum PlayerState
 {
@@ -57,6 +58,9 @@ public class GameManager : MonoBehaviour
         attackDuration = 1.1f;
 
     private Coroutine moveCoroutine;
+
+    // Аналитика Luna: «первый бой» логируем один раз (боёв несколько — не раздуваем воронку).
+    private bool _firstBattleLogged;
 
     private readonly List<Vector3> currentPath = new();
     private readonly List<PathDot> activeDots = new();
@@ -116,6 +120,9 @@ public class GameManager : MonoBehaviour
     private void HandleIntroFinished()
     {
         PlayerState = PlayerState.Idle;
+
+        // Аналитика Luna: игрок получил управление — старт геймплея (верх воронки).
+        Analytics.LogEvent("game_started", 0);
     }
 
     /// <summary>
@@ -133,6 +140,13 @@ public class GameManager : MonoBehaviour
     {
         PlayerState = PlayerState.Fighting;
         heroView.SetRun(false);
+
+        // Аналитика Luna: первый бой — точка вовлечения (логируем один раз).
+        if (!_firstBattleLogged)
+        {
+            _firstBattleLogged = true;
+            Analytics.LogEvent("battle_started", 0);
+        }
     }
 
     private void HandleBattleWin(EnemyView enemy)
@@ -168,6 +182,9 @@ public class GameManager : MonoBehaviour
         }
 
         ClearDots();
+
+        // Аналитика Luna: победа (низ воронки, до клика CTA).
+        Analytics.LogEvent(Luna.Unity.Analytics.EventType.LevelWon, 1);
     }
 
     private IEnumerator AttackRoutine(EnemyView enemy)
@@ -216,6 +233,9 @@ public class GameManager : MonoBehaviour
         // (relay -> EnemyView.OnAttackHit -> HeroView.OnKilled -> SetDie + RaiseHeroLose).
         enemy.FaceInstant(heroView.transform.position);
         enemy.Attack(heroView);
+
+        // Аналитика Luna: поражение.
+        Analytics.LogEvent(Luna.Unity.Analytics.EventType.LevelFailed, 0);
     }
 
     private void HandleChestOpenStart()
@@ -242,6 +262,9 @@ public class GameManager : MonoBehaviour
     {
         // Меч получен — управление возвращается.
         PlayerState = PlayerState.Idle;
+
+        // Аналитика Luna: открыт сундук и получен меч — ключевой шаг воронки.
+       Analytics.LogEvent("chest_opened", 0);
     }
 
     private void MoveToPoint(Vector3 target)

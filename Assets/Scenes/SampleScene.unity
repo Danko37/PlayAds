@@ -1576,8 +1576,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_SendPointerHoverToParent: 1
   m_HorizontalAxis: Horizontal
   m_VerticalAxis: Vertical
   m_SubmitButton: Submit
@@ -2853,7 +2854,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7487d93020aa84f47bc99bf913f4ee9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
-  mixer: {fileID: 24100000, guid: e9abc42557d53704784c9d1d55a112d5, type: 2}
+  musicVolume: 0.55
+  ambientVolume: 0.45
+  effectsVolume: 1
+  uiVolume: 1
   backgroundMusic: {fileID: 8300000, guid: 485c34d4df7af224b86f11a75b9e41fa, type: 3}
   seaAmbient: {fileID: 8300000, guid: 595fb23d3a7238f4f823ad5411e148c8, type: 3}
   playMusicOnStart: 1
@@ -3072,7 +3076,7 @@ Transform:
   m_GameObject: {fileID: 1761891494}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.24, y: 7.34308, z: -9.49}
+  m_LocalPosition: {x: -4.24, y: 17, z: -9.49}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
