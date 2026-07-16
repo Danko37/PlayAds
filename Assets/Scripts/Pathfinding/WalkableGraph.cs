@@ -263,8 +263,8 @@ public class WalkableGraph : MonoBehaviour
         var anchor = 0;
         for (var i = 2; i < path.Count; i++)
         {
-            // От опорной точки не видно path[i] — фиксируем предыдущую как новый угол.
-            if (IsBlocked(path[anchor], path[i]))
+            // Спрямляем, пока прямая anchor→i держится в «коридоре» пути (близко к его узлам).
+            if (!CorridorClear(path, anchor, i))
             {
                 _smoothBuffer.Add(path[i - 1]);
                 anchor = i - 1;
@@ -277,37 +277,35 @@ public class WalkableGraph : MonoBehaviour
     }
 
     /// <summary>
-    /// true, если прямой отрезок a→b проходит через непроходимую клетку (пустота/вода или
-    /// препятствие). Проверка по запечённой карте — чистая математика, без физики (Luna-safe).
+    /// Прямая anchor→target «в коридоре», если все промежуточные узлы пути отстоят от неё не
+    /// дальше ~клетки — тогда она идёт вдоль настила, а не срезает воду. Без физики (Luna-safe).
     /// </summary>
-    private bool IsBlocked(Vector3 a, Vector3 b)
+    private bool CorridorClear(List<Vector3> path, int anchor, int target)
     {
-        var dist = HorizontalDistance(a, b);
-        var steps = Mathf.Max(1, Mathf.CeilToInt(dist / (cellSize * 0.5f)));
-
-        for (var s = 0; s <= steps; s++)
+        var a = path[anchor];
+        var b = path[target];
+        var tolSqr = cellSize * cellSize;
+        for (var k = anchor + 1; k < target; k++)
         {
-            var t = (float)s / steps;
-            var p = Vector3.Lerp(a, b, t);
-            if (!CellWalkable(p.x, p.z))
+            if (SqrDistToSegmentXZ(path[k], a, b) > tolSqr)
             {
-                return true;
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
-    private bool CellWalkable(float worldX, float worldZ)
+    private static float SqrDistToSegmentXZ(Vector3 p, Vector3 a, Vector3 b)
     {
-        var ix = Mathf.FloorToInt((worldX - _originX) / cellSize);
-        var iz = Mathf.FloorToInt((worldZ - _originZ) / cellSize);
-        if (ix < 0 || ix >= _cols || iz < 0 || iz >= _rows)
-        {
-            return false;
-        }
-
-        return _walkable[iz * _cols + ix];
+        var dx = b.x - a.x;
+        var dz = b.z - a.z;
+        var len2 = dx * dx + dz * dz;
+        var t = len2 > 1e-6f ? ((p.x - a.x) * dx + (p.z - a.z) * dz) / len2 : 0f;
+        t = Mathf.Clamp01(t);
+        var ex = p.x - (a.x + t * dx);
+        var ez = p.z - (a.z + t * dz);
+        return ex * ex + ez * ez;
     }
 
 #if UNITY_EDITOR
@@ -391,10 +389,10 @@ public class WalkableGraph : MonoBehaviour
                     continue;
                 }
 
-                // Ортогональных соседей связываем безусловно (воды между смежными клетками нет);
-                // проверка «под отрезком есть пол» нужна только диагоналям (могут срезать угол).
+                // Ортогонали связываем безусловно; диагональ — только если идёт вдоль настила
+                // (хотя бы один угловой сосед проходим), а не срезает воду.
                 var orthogonal = Mathf.Abs(d.x) < cellSize * 0.5f || Mathf.Abs(d.z) < cellSize * 0.5f;
-                if (!orthogonal && IsBlocked(nodes[i], nodes[j]))
+                if (!orthogonal && !DiagonalClear(nodes[i], nodes[j]))
                 {
                     continue;
                 }
@@ -410,6 +408,30 @@ public class WalkableGraph : MonoBehaviour
 
         // Буферы A* пересоздадутся под новый размер при следующем поиске.
         _g = null;
+    }
+
+    /// <summary>
+    /// Диагональ a→b проходит, если хотя бы один из двух угловых соседей — проходимая клетка
+    /// (идём вдоль кромки, а не через воду). Индексы клеток через Round — устойчиво к границам.
+    /// </summary>
+    private bool DiagonalClear(Vector3 a, Vector3 b)
+    {
+        var ax = Mathf.RoundToInt((a.x - _originX) / cellSize);
+        var az = Mathf.RoundToInt((a.z - _originZ) / cellSize);
+        var bx = Mathf.RoundToInt((b.x - _originX) / cellSize);
+        var bz = Mathf.RoundToInt((b.z - _originZ) / cellSize);
+
+        return CellWalkableIdx(bx, az) || CellWalkableIdx(ax, bz);
+    }
+
+    private bool CellWalkableIdx(int ix, int iz)
+    {
+        if (ix < 0 || ix >= _cols || iz < 0 || iz >= _rows)
+        {
+            return false;
+        }
+
+        return _walkable[iz * _cols + ix];
     }
 
     // ---------------------------------------------------------------------
