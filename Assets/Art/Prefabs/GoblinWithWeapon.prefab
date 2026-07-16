@@ -109,7 +109,6 @@ Transform:
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!212 &8398667145397790617
 SpriteRenderer:
-  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -128,12 +127,10 @@ SpriteRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  - {fileID: 2100000, guid: 05985bbd7fecb2d449713161ad0c4b98, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -151,11 +148,9 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 140ecfa51ca4d8741a79de33ada32ef2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -165,6 +160,7 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &2642381391588936198
 GameObject:
@@ -190,14 +186,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2642381391588936198}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.38268343, z: 0, w: 0.92387956}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0.00000014901156, y: 0.27751216, z: 0.00000008940694, w: 0.9607221}
+  m_LocalPosition: {x: 0.019244703, y: 0.000021836022, z: -0.03619106}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3861490786464650204}
   m_Father: {fileID: 3253445387998898269}
-  m_LocalEulerAnglesHint: {x: 0, y: 45, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 32.224, z: 0}
 --- !u!1 &2977408158446177874
 GameObject:
   m_ObjectHideFlags: 0
@@ -209,7 +205,7 @@ GameObject:
   - component: {fileID: 3253445387998898269}
   - component: {fileID: 5245445079719149684}
   - component: {fileID: 2948538529407628820}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: GoblinWithWeapon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -233,6 +229,7 @@ Transform:
   - {fileID: 1838651332512168839}
   - {fileID: 5631605172450573976}
   - {fileID: 7494324452234378134}
+  - {fileID: 1847161116580386083}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -40.717, y: -76.178, z: 69.336}
 --- !u!135 &5245445079719149684
@@ -254,7 +251,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 0.65
   m_Center: {x: 0, y: 0.66, z: 0}
 --- !u!114 &2948538529407628820
 MonoBehaviour:
@@ -269,17 +266,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Characters.EnemyView
   entityType: 1
+  Score: 55
   ScoreBackImage: {fileID: 3749646444203980922}
   ScoreBackColor: {r: 0.94509804, g: 0.050980393, b: 0.039215688, a: 1}
   ScoreText: {fileID: 3687964141323277656}
   animator: {fileID: 7167172858250430886}
-  Score: 15
+  ColorCircleGo: {fileID: 904230391483133344}
+  scoreCanvasGroup: {fileID: 5330434947137180182}
+  pulseTarget: {fileID: 1838651332512168839}
+  pulseScale: 1.3
+  pulseTime: 0.2
   bodyCollider: {fileID: 5245445079719149684}
-  deathAnimDuration: 1
+  deathAnimDuration: 1.4
   disappearDuration: 0.3
   visualTransform: {fileID: 3861490786464650204}
   rotationOffset: 135
   fallbackHitDelay: 0.5
+  hasAttackAnimation: 1
+  hasDeathAnimation: 1
+  isArmed: 1
+  isFinalEnemy: 1
 --- !u!1 &3460845203729961879
 GameObject:
   m_ObjectHideFlags: 0
@@ -291,6 +297,7 @@ GameObject:
   - component: {fileID: 817943801048473625}
   - component: {fileID: 2347911880953423364}
   - component: {fileID: 4063495420589128307}
+  - component: {fileID: 5330434947137180182}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -337,7 +344,6 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 1
-  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -366,6 +372,18 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 1
+--- !u!225 &5330434947137180182
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3460845203729961879}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &4502747614287212736
 GameObject:
   m_ObjectHideFlags: 0
@@ -392,14 +410,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4502747614287212736}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.79780227, y: 0.10591934, z: -0.2336329, w: 0.54562664}
-  m_LocalPosition: {x: -0.073, y: 0.036, z: 0.013}
+  m_LocalRotation: {x: 0.78657025, y: -0.17033665, z: -0.0351858, w: 0.59249866}
+  m_LocalPosition: {x: -0.07300004, y: 0.036000036, z: 0.013000181}
   m_LocalScale: {x: 1.1552579, y: 1.1552579, z: 1.1552579}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2651019332463957510}
   m_Father: {fileID: 3253445387998898269}
-  m_LocalEulerAnglesHint: {x: 113.06, y: 41.044006, z: 12.675003}
+  m_LocalEulerAnglesHint: {x: 113.06, y: 41.044006, z: 52.239}
 --- !u!33 &3429948927752749283
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -428,8 +446,6 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -451,11 +467,9 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &5920378203413288659
 GameObject:
@@ -522,7 +536,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 2
+  m_text: 55
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 79459efec17a4d00a321bdcc27bbc385, type: 2}
@@ -655,8 +669,6 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -678,11 +690,9 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7350717954668580959
 GameObject:
@@ -714,6 +724,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 817943801048473625}
+  m_Father: {fileID: 3253445387998898269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8403711638139306634
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1847161116580386083}
+  m_Layer: 6
+  m_Name: EnemyTutorPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1847161116580386083
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8403711638139306634}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.06, y: 0.55, z: -0.16}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
   m_Father: {fileID: 3253445387998898269}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &3610897427526464567

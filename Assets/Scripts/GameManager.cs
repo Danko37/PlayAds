@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Characters;
 using DG.Tweening;
-using Luna.Unity;
 
 public enum PlayerState
 {
@@ -122,7 +121,7 @@ public class GameManager : MonoBehaviour
         PlayerState = PlayerState.Idle;
 
         // Аналитика Luna: игрок получил управление — старт геймплея (верх воронки).
-        Analytics.LogEvent("game_started", 0);
+        Luna.Unity.Analytics.LogEvent("game_started", 0);
     }
 
     /// <summary>
@@ -145,7 +144,7 @@ public class GameManager : MonoBehaviour
         if (!_firstBattleLogged)
         {
             _firstBattleLogged = true;
-            Analytics.LogEvent("battle_started", 0);
+            Luna.Unity.Analytics.LogEvent("battle_started", 0);
         }
     }
 
@@ -166,9 +165,8 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Финальная победа героя. UIManager по этому же событию показывает окно итога, а здесь
-    /// блокируем игровой ввод терминальным состоянием Win — иначе клики продолжали бы
-    /// управлять героем «сквозь» окно (HandleClick/Update реагируют только в Idle/Moving).
+    /// Финальная победа: терминальное состояние Win блокирует ввод, чтобы герой не управлялся
+    /// «сквозь» окно итога (UIManager показывает окно по тому же событию).
     /// </summary>
     private void HandleHeroWin()
     {
@@ -184,7 +182,7 @@ public class GameManager : MonoBehaviour
         ClearDots();
 
         // Аналитика Luna: победа (низ воронки, до клика CTA).
-        Analytics.LogEvent(Luna.Unity.Analytics.EventType.LevelWon, 1);
+        Luna.Unity.Analytics.LogEvent(Luna.Unity.Analytics.EventType.LevelWon, 1);
     }
 
     private IEnumerator AttackRoutine(EnemyView enemy)
@@ -235,7 +233,7 @@ public class GameManager : MonoBehaviour
         enemy.Attack(heroView);
 
         // Аналитика Luna: поражение.
-        Analytics.LogEvent(Luna.Unity.Analytics.EventType.LevelFailed, 0);
+        Luna.Unity.Analytics.LogEvent(Luna.Unity.Analytics.EventType.LevelFailed, 0);
     }
 
     private void HandleChestOpenStart()
@@ -264,10 +262,10 @@ public class GameManager : MonoBehaviour
         PlayerState = PlayerState.Idle;
 
         // Аналитика Luna: открыт сундук и получен меч — ключевой шаг воронки.
-       Analytics.LogEvent("chest_opened", 0);
+        Luna.Unity.Analytics.LogEvent("chest_opened", 0);
     }
 
-    private void MoveToPoint(Vector3 target)
+    private void MoveToPoint(Vector3 target, bool showDestinationMarker = true)
     {
         if (moveCoroutine != null)
         {
@@ -281,9 +279,8 @@ public class GameManager : MonoBehaviour
         currentPath.Clear();
         if (!graph.FindPath(heroView.transform.position, target, currentPath) || currentPath.Count < 2)
         {
-            // Путь не построен (клик в отрезанную/недостижимую зону — напр. эрозия отступа
-            // разорвала связность). Нельзя оставлять героя в подвисшем Moving с вечной
-            // анимацией бега: аккуратно гасим бег и возвращаемся в Idle.
+            // Путь не построен (клик в отрезанную/недостижимую зону). Нельзя оставлять героя
+            // в подвисшем Moving с вечной анимацией бега: аккуратно гасим бег и встаём в Idle.
             heroView.SetRun(false);
             heroView.ResetFacing();
             if (PlayerState == PlayerState.Moving)
@@ -293,7 +290,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        BuildDots();
+        BuildDots(showDestinationMarker);
 
         moveCoroutine = StartCoroutine(MoveCoroutine());
     }
@@ -372,7 +369,7 @@ public class GameManager : MonoBehaviour
         }
     }
     
-    private void BuildDots()
+    private void BuildDots(bool showDestinationMarker)
     {
         if (currentPath.Count < 2)
             return;
@@ -416,12 +413,15 @@ public class GameManager : MonoBehaviour
         }
 
         // Круг в конце пути (точка, куда придёт герой). Плашка лежит на земле — поворот 90° по X.
-        if (destinationMarkerPrefab != null)
+        // Для клика по сущности круг не спавним — цель это сам объект.
+        if (showDestinationMarker && destinationMarkerPrefab != null)
+        {
             destinationMarker = Instantiate(
                 destinationMarkerPrefab,
                 currentPath[currentPath.Count - 1],
                 Quaternion.Euler(90f, 0f, 0f),
                 pathPointsParent);
+        }
     }
     
     private void UpdateDots(Vector3 target)
@@ -483,18 +483,37 @@ public class GameManager : MonoBehaviour
                 clickedEntity.PulseClick();
         }
 
-        // Цель движения: по земле (навмешу). Если по земле не попали, но кликнули по
-        // интерактиву — бежим к позиции самого объекта (как будто кликнули туда).
+        // Клик по сущности в приоритете: проецируем её на сетку лучом вниз (пивот может быть
+        // выше навмеша). Нет попадания — не идём. Круг конца пути для сущности не спавним.
         Vector3 destination;
-        if (Physics.Raycast(ray, out hit, 100f, 1 << 3))
+        bool showDestinationMarker;
+        if (clickedEntity != null)
+        {
+            // Точка подхода — moveTarget с префаба (фолбэк на пивот, если не задан).
+            var targetPoint = clickedEntity.moveTarget != null
+                ? clickedEntity.moveTarget.position
+                : clickedEntity.transform.position;
+
+            if (!Physics.Raycast(targetPoint, Vector3.down, out var groundUnderEntity, 200f, 1 << 3))
+            {
+                return;
+            }
+
+            destination = groundUnderEntity.point;
+            showDestinationMarker = false;
+        }
+        else if (Physics.Raycast(ray, out hit, 100f, 1 << 3))
+        {
             destination = hit.point;
-        else if (clickedEntity != null)
-            destination = clickedEntity.transform.position;
+            showDestinationMarker = true;
+        }
         else
+        {
             return;
+        }
 
         // Привязку к проходимой зоне делает сам граф (снап к ближайшему узлу).
-        MoveToPoint(destination);
+        MoveToPoint(destination, showDestinationMarker);
     }
     private void Update()
     {

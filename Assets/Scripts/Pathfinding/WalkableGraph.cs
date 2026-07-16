@@ -2,11 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Граф равномерных путевых точек по проходимому полу — замена Unity NavMesh
-/// (его не поддерживает Playworks/Luna). Точки, рёбра И булева карта проходимости
-/// ЗАПЕКАЮТСЯ в редакторе (луч вниз на пол + проверка препятствий). В рантайме
-/// поиск пути (A*) и сглаживание работают ЧИСТОЙ МАТЕМАТИКОЙ по запечённым массивам,
-/// без единого обращения к физике — это безопасно для Luna.
+/// Замена NavMesh (Luna его не тянет): граф путевых точек запекается в редакторе,
+/// а рантайм-поиск (A* + сглаживание) — чистая математика без физики.
 /// </summary>
 public class WalkableGraph : MonoBehaviour
 {
@@ -62,7 +59,13 @@ public class WalkableGraph : MonoBehaviour
     // ---------------------------------------------------------------------
 
     /// <summary>Индекс ближайшего узла к точке (по горизонтали). -1, если граф пуст.</summary>
-    public int GetNearestNode(Vector3 p)
+    public int GetNearestNode(Vector3 p) => GetNearestNode(p, false);
+
+    /// <summary>
+    /// Ближайший узел к точке (по горизонтали). requireConnected пропускает изолированные
+    /// узлы (0 рёбер) — из них A* никуда не уйдёт.
+    /// </summary>
+    public int GetNearestNode(Vector3 p, bool requireConnected)
     {
         if (!IsBaked)
         {
@@ -73,6 +76,11 @@ public class WalkableGraph : MonoBehaviour
         var bestSqr = float.MaxValue;
         for (var i = 0; i < _nodes.Length; i++)
         {
+            if (requireConnected && _neighborOffsets[i + 1] - _neighborOffsets[i] == 0)
+            {
+                continue;
+            }
+
             var d = _nodes[i] - p;
             d.y = 0f;
             var sqr = d.sqrMagnitude;
@@ -98,8 +106,9 @@ public class WalkableGraph : MonoBehaviour
             return false;
         }
 
-        var start = GetNearestNode(from);
-        var goal = GetNearestNode(to);
+        // Изолированные узлы (0 рёбер) пропускаем — из такого узла A* никуда не уйдёт.
+        var start = GetNearestNode(from, requireConnected: true);
+        var goal = GetNearestNode(to, requireConnected: true);
         if (start < 0 || goal < 0)
         {
             return false;
@@ -382,9 +391,10 @@ public class WalkableGraph : MonoBehaviour
                     continue;
                 }
 
-                // Ребро есть, только если между точками проходимо по карте (нет препятствия
-                // И под всем отрезком есть пол — иначе диагональ срежет вогнутый угол над водой).
-                if (IsBlocked(nodes[i], nodes[j]))
+                // Ортогональных соседей связываем безусловно (воды между смежными клетками нет);
+                // проверка «под отрезком есть пол» нужна только диагоналям (могут срезать угол).
+                var orthogonal = Mathf.Abs(d.x) < cellSize * 0.5f || Mathf.Abs(d.z) < cellSize * 0.5f;
+                if (!orthogonal && IsBlocked(nodes[i], nodes[j]))
                 {
                     continue;
                 }
