@@ -1651,9 +1651,8 @@ MonoBehaviour:
   events: {fileID: 11400000, guid: 96189053bb337c647a7543f68ae7e85e, type: 2}
   pointPrefab: {fileID: 650292258}
   destinationMarkerPrefab: {fileID: 1047082894}
-  interactableMask:
-    serializedVersion: 2
-    m_Bits: 64
+  entityClickRadius: 2
+  entityClickHeight: 0.5
   moveSpeed: 8
   dotSpacing: 1.4
   dotFadeDistance: 1
@@ -2037,6 +2036,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   agentRadius: 0.4
+  maxSlope: 45
   smoothPath: 1
   _nodes:
   - {x: -5.710001, y: 6.111188, z: -6.1400023}
@@ -2955,7 +2955,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   musicVolume: 0.55
-  ambientVolume: 0.45
+  ambientVolume: 0.225
   effectsVolume: 1
   uiVolume: 1
   backgroundMusic: {fileID: 8300000, guid: 485c34d4df7af224b86f11a75b9e41fa, type: 3}

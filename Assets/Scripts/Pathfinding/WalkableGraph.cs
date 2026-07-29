@@ -22,6 +22,8 @@ public class WalkableGraph : MonoBehaviour
     [SerializeField] private LayerMask obstacleMask;
     [Tooltip("Зазор от препятствий: клетка отбраковывается, если препятствие ближе.")]
     [SerializeField] private float agentRadius = 0.4f;
+    [Tooltip("Макс. уклон ребра, градусы. Круче — обрыв/стена, ребро не строится (холмы/ямы).")]
+    [SerializeField, Range(0f, 89f)] private float maxSlope = 45f;
 
     [Header("Поиск пути")]
     [Tooltip("Срезать лишние углы по карте проходимости (чистая математика, безопасно для Luna).")]
@@ -287,7 +289,7 @@ public class WalkableGraph : MonoBehaviour
         var tolSqr = cellSize * cellSize;
         for (var k = anchor + 1; k < target; k++)
         {
-            if (SqrDistToSegmentXZ(path[k], a, b) > tolSqr)
+            if (SqrDistToSegment(path[k], a, b) > tolSqr)
             {
                 return false;
             }
@@ -296,16 +298,15 @@ public class WalkableGraph : MonoBehaviour
         return true;
     }
 
-    private static float SqrDistToSegmentXZ(Vector3 p, Vector3 a, Vector3 b)
+    // 3D-дистанция от точки до отрезка: на ровной поверхности = XZ, на рельефе учитывает высоту
+    // (прямая не спрямится сквозь холм — узлы на подъёме отойдут от неё по Y).
+    private static float SqrDistToSegment(Vector3 p, Vector3 a, Vector3 b)
     {
-        var dx = b.x - a.x;
-        var dz = b.z - a.z;
-        var len2 = dx * dx + dz * dz;
-        var t = len2 > 1e-6f ? ((p.x - a.x) * dx + (p.z - a.z) * dz) / len2 : 0f;
+        var ab = b - a;
+        var len2 = ab.sqrMagnitude;
+        var t = len2 > 1e-6f ? Vector3.Dot(p - a, ab) / len2 : 0f;
         t = Mathf.Clamp01(t);
-        var ex = p.x - (a.x + t * dx);
-        var ez = p.z - (a.z + t * dz);
-        return ex * ex + ez * ez;
+        return (p - (a + t * ab)).sqrMagnitude;
     }
 
 #if UNITY_EDITOR
@@ -368,6 +369,8 @@ public class WalkableGraph : MonoBehaviour
         var count = nodes.Count;
         var connectRadius = cellSize * 1.5f; // 8-связность: прямые и диагональные соседи
         var radiusSqr = connectRadius * connectRadius;
+        var maxSlopeTan = Mathf.Tan(maxSlope * Mathf.Deg2Rad);
+        var maxSlopeTanSqr = maxSlopeTan * maxSlopeTan;
 
         var offsets = new int[count + 1];
         var flat = new List<int>(count * 8);
@@ -383,8 +386,16 @@ public class WalkableGraph : MonoBehaviour
                 }
 
                 var d = nodes[j] - nodes[i];
+                var dy = d.y;
                 d.y = 0f;
-                if (d.sqrMagnitude > radiusSqr)
+                var horizSqr = d.sqrMagnitude;
+                if (horizSqr > radiusSqr)
+                {
+                    continue;
+                }
+
+                // Слишком крутой перепад высот — обрыв/стена, не связываем (холмы/ямы).
+                if (dy * dy > maxSlopeTanSqr * horizSqr)
                 {
                     continue;
                 }

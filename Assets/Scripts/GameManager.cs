@@ -33,11 +33,12 @@ public class GameManager : MonoBehaviour
     [Tooltip("Префаб круга в конце пути (маркер точки назначения).")]
     [SerializeField] private 
         GameObject destinationMarkerPrefab;
-    [Tooltip("Слои интерактивных сущностей (враг/сундук) для детекции клика.")]
-    [SerializeField] private 
-        LayerMask interactableMask;
-    
-    [SerializeField] 
+    [Tooltip("Радиус зоны клика по сущности в мире (проецируется в пиксели). Luna-safe.")]
+    [SerializeField] private float entityClickRadius = 1f;
+    [Tooltip("Подъём центра зоны над пивотом сущности (мир) — навести на модель, а не под ноги.")]
+    [SerializeField] private float entityClickHeight = 0.5f;
+
+    [SerializeField]
     private float moveSpeed = 8f;
     [SerializeField] 
     private float dotSpacing = 50f;
@@ -473,33 +474,35 @@ public class GameManager : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(new Vector3(mousePosition.x, mousePosition.y, 0));
         RaycastHit hit;
 
-        // Клик по интерактивной сущности (враг/сундук) — пульс объекта.
-        // Отдельный луч: сущности не на слое NavMesh, а их коллайдеры — триггеры.
-        Characters.EntityBase clickedEntity = null;
-        if (Physics.Raycast(ray, out var entityHit, 100f, interactableMask, QueryTriggerInteraction.Collide))
+        // Клик по сущности подбираем экранной проекцией (физ-рейкаст по триггерам в Luna не
+        // работает). Пульс — обратная связь, что попали по интерактиву.
+        var clickedEntity = FindClickedEntity(ray.origin, ray.direction);
+        Debug.Log($"[Click] в реестре={Characters.InteractBase.Interactables.Count}, найдена={(clickedEntity != null ? clickedEntity.name : "нет")}");
+        if (clickedEntity != null)
         {
-            clickedEntity = entityHit.collider.GetComponentInParent<Characters.EntityBase>();
-            if (clickedEntity != null)
-                clickedEntity.PulseClick();
+            clickedEntity.PulseClick();
         }
 
-        // Клик по сущности в приоритете: проецируем её на сетку лучом вниз (пивот может быть
-        // выше навмеша). Нет попадания — не идём. Круг конца пути для сущности не спавним.
+        // Клик по сущности в приоритете; круг конца пути для неё не спавним.
         Vector3 destination;
         bool showDestinationMarker;
         if (clickedEntity != null)
         {
-            // Точка подхода — moveTarget с префаба (фолбэк на пивот, если не задан).
-            var targetPoint = clickedEntity.moveTarget != null
-                ? clickedEntity.moveTarget.position
-                : clickedEntity.transform.position;
-
-            if (!Physics.Raycast(targetPoint, Vector3.down, out var groundUnderEntity, 200f, 1 << 3))
+            // Цель — moveTarget с префаба (ставится на навмеш; без физики, Luna-safe).
+            // Не задан — фолбэк: проецируем пивот на навмеш лучом вниз.
+            if (clickedEntity.moveTarget != null)
+            {
+                destination = clickedEntity.moveTarget.position;
+            }
+            else if (Physics.Raycast(new Ray(clickedEntity.transform.position, Vector3.down), out var groundUnderEntity, 200f, 1 << 3))
+            {
+                destination = groundUnderEntity.point;
+            }
+            else
             {
                 return;
             }
 
-            destination = groundUnderEntity.point;
             showDestinationMarker = false;
         }
         else if (Physics.Raycast(ray, out hit, 100f, 1 << 3))
@@ -515,6 +518,43 @@ public class GameManager : MonoBehaviour
         // Привязку к проходимой зоне делает сам граф (снап к ближайшему узлу).
         MoveToPoint(destination, showDestinationMarker);
     }
+
+    /// <summary>
+    /// Кликабельная сущность, ближайшая к лучу клика (в пределах entityClickRadius по миру).
+    /// Чистая векторная математика по лучу камеры — без Screen/коллайдеров, работает в Luna.
+    /// </summary>
+    private Characters.EntityBase FindClickedEntity(Vector3 rayOrigin, Vector3 rayDir)
+    {
+        Characters.EntityBase best = null;
+        var bestDist = float.MaxValue;
+
+        foreach (var it in Characters.InteractBase.Interactables)
+        {
+            var entity = it as Characters.EntityBase;
+            if (entity == null || it.entityType == Characters.EntityType.Hero)
+            {
+                continue;
+            }
+
+            // Расстояние от центра сущности до луча (перпендикуляр).
+            var center = it.transform.position + Vector3.up * entityClickHeight;
+            var proj = Vector3.Dot(center - rayOrigin, rayDir);
+            if (proj < 0f) // за камерой
+            {
+                continue;
+            }
+
+            var dist = Vector3.Distance(center, rayOrigin + rayDir * proj);
+            if (dist <= entityClickRadius && dist < bestDist)
+            {
+                bestDist = dist;
+                best = entity;
+            }
+        }
+
+        return best;
+    }
+
     private void Update()
     {
         // Ввод активен только когда игрок реально управляет героем. Во время интро,
